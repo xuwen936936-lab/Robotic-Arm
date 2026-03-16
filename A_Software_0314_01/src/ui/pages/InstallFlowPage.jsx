@@ -3,6 +3,7 @@ import InstallToolPage from './InstallToolPage.jsx'
 import InstallCalibrationPage from './InstallCalibrationPage.jsx'
 import TestToolPage from './TestToolPage.jsx'
 import AssemblyModelPage from './AssemblyModelPage.jsx'
+import ExecutionPage from './ExecutionPage.jsx'
 
 export default function InstallFlowPage() {
   const [step, setStep] = useState('install')
@@ -20,7 +21,11 @@ export default function InstallFlowPage() {
   }
 
   if (step === 'assembly') {
-    return <AssemblyModelPage />
+    return <AssemblyModelPage onGoExecution={() => setStep('execution')} />
+  }
+
+  if (step === 'execution') {
+    return <ExecutionPage onRestartGame={() => setStep('install')} />
   }
 
   return null
