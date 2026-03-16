@@ -1,0 +1,81 @@
+// =================================================================================
+// File: EmergencyStop.ino
+// Function: NC Emergency Button Logic via GPIO 19. 
+//           Stops all motion on press, resets to Vertical Pose (1500) on release.
+// =================================================================================
+
+#include <Arduino.h>
+
+#define PIN_STOP 19 // GPIO 19 connected to Pin 12 of the button
+
+// 声明外部变量和函数
+extern void all_uart_send_str(char *str);
+extern void parse_action(char *action_str);
+extern void set_servo(int servo_index, int pwm_value, int move_time);
+extern uint8_t group_do_ok;
+
+// 初始化急停引脚
+void setup_emergency_stop() {
+    // 常闭(NC)逻辑：闭合时为LOW (GND)，断开/按下时内部上拉为HIGH
+    pinMode(PIN_STOP, INPUT_PULLUP);
+}
+
+// 急停检测核心逻辑
+void loop_emergency_stop() {
+    // 【判断逻辑】：电路断开（按下按钮）触发 HIGH 电平
+    if (digitalRead(PIN_STOP) == HIGH) {
+        
+        // 1. 强制阻断正在执行的动作组
+        group_do_ok = 1; 
+
+        // 2. 立即向所有舵机发送停止指令
+        all_uart_send_str("#000PDST!");
+        
+        Serial.println("\n[ALERT] !!! EMERGENCY STOP TRIGGERED !!!");
+        Serial.println("[STATUS] System locked. Waiting for manual reset...");
+
+        // 3. 进入锁定循环，只要按钮没复位就一直停在这里
+        while (digitalRead(PIN_STOP) == HIGH) {
+            // 声光报警反馈 (1秒一次)
+            beep_on();
+            nled_on();
+            delay(50);  
+            beep_off();
+            nled_off();
+            delay(950); 
+            
+            // 喂狗防止重启
+            yield(); 
+        }
+
+        // 4. 按钮复位后的处理逻辑（回归竖直构型）
+        Serial.println("\n[SYSTEM] Emergency Stop Released.");
+        Serial.println("[ACTION] Recovering torque and moving to VERTICAL pose...");
+
+        // A. 恢复所有舵机的扭矩 (上力)
+        all_uart_send_str("#255PULR!"); 
+        delay(200); 
+
+        // B. 控制 0-5 号核心关节在 2 秒内平滑回到 1500 (竖直中位)
+        for (int i = 0; i < 6; i++) {
+            set_servo(i, 1500, 2000); 
+        }
+
+        // C. 等待复位移动完成
+        delay(2000); 
+        
+        Serial.println("[SYSTEM] Reset complete. System READY.");
+    }
+}
+
+// 带检测的特殊延时函数
+void smart_delay_with_stop(unsigned long ms) {
+    unsigned long start_time = millis();
+    while (millis() - start_time < ms) {
+        loop_emergency_stop(); 
+        
+        if (digitalRead(PIN_STOP) == HIGH) return;
+        
+        delay(1); 
+    }
+}
