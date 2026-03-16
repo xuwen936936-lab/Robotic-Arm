@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
   initializeHardwareStore,
-  startMockRun,
+  startFixedMoveTest,
   useHardwareStore,
 } from '../../services/useHardwareStore.ts'
 import { TestToolPageView } from './TestToolPageView.jsx'
@@ -48,7 +48,8 @@ export default function TestToolPage({ onStartGame }) {
     setStatus('idle')
     setShowToast(false)
     setShowHintModal(false)
-    startMockRun(RUN_DURATION_MS)
+    //startMockRun(RUN_DURATION_MS)
+    startFixedMoveTest(RUN_DURATION_MS) // <-- 改为调用我们写的方法
 
     if (resultTimerRef.current !== null) {
       window.clearTimeout(resultTimerRef.current)

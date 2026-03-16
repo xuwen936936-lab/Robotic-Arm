@@ -63,7 +63,8 @@ let bridge: IHardwareBridge | null = null
 let bridgeUnsubscribe: (() => void) | null = null
 let isRealHardwareConnected = false
 
-const REAL_HARDWARE_ENABLED = import.meta.env.VITE_USE_REAL_HARDWARE === 'true'
+// 强制设为 true，连通真实硬件
+const REAL_HARDWARE_ENABLED = true;
 const REAL_HARDWARE_WS_URL = import.meta.env.VITE_HARDWARE_WS_URL ?? 'ws://localhost:8080'
 
 function emitChange() {
@@ -288,6 +289,54 @@ export function startMockRun(durationMs: number = 6000) {
 
   runTimeoutId = window.setTimeout(() => {
     clearRunTimers()
+    setState({
+      isRunning: false,
+      temperature: getNextTemperature(false),
+      coords: sentToRealHardware ? state.coords : createMovingPoint(),
+    })
+  }, durationMs)
+}
+
+// === 新增：专门用于 Test Tool 页面的真实硬件测试逻辑 ===
+export function startFixedMoveTest(durationMs: number = 6000) {
+  if (typeof window === 'undefined') return
+
+  startTelemetry()
+  clearRunTimers()
+
+  // 发送 'F' 触发定点移动
+  const sentToRealHardware = sendBridgeCommand('FIXED_MOVE')
+  
+  if (sentToRealHardware) {
+    // 发送 'K' 开启坐标实时回传流
+    sendBridgeCommand('TOGGLE_COORD')
+  }
+
+  setState({
+    connection: 'connected',
+    source: sentToRealHardware ? 'hardware' : 'mock',
+    isRunning: true,
+    temperature: getNextTemperature(true),
+    coords: sentToRealHardware ? state.coords : createMovingPoint(),
+  })
+
+  // 如果没连上硬件，继续用假数据跑动画
+  if (!sentToRealHardware) {
+    runIntervalId = window.setInterval(() => {
+      setState({
+        coords: createMovingPoint(),
+        temperature: getNextTemperature(true),
+      })
+    }, 450)
+  }
+
+  // 动作结束后的清理
+  runTimeoutId = window.setTimeout(() => {
+    clearRunTimers()
+    if (sentToRealHardware) {
+      // 发送 'K' 关闭坐标流，节省资源
+      sendBridgeCommand('TOGGLE_COORD') 
+    }
     setState({
       isRunning: false,
       temperature: getNextTemperature(false),
