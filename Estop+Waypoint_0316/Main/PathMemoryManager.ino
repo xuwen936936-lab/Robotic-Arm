@@ -102,7 +102,8 @@ void loop_path_memory() {
             }
 
             Serial.println("\n[DONE] Batch process finished.");
-            break; 
+            return; 
+
 
             // --- 急停强制跳出点 ---
             stop_batch:
