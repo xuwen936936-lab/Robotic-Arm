@@ -127,6 +127,8 @@ void serialEvent();
 //0316 声明急停模块函数
 extern void setup_emergency_stop();
 extern void loop_emergency_stop();
+//申明memory模块函数
+extern void loop_path_memory();
 
 #define US01_ADDR 0x2D  
 #define REG_R_RED    0x00
@@ -1587,5 +1589,7 @@ void loop(){
     loop_torque_control();
     loop_print_tcp();  
     loop_fixed_move();  
-    loop_teach_record();          
+    loop_teach_record(); 
+	//0316
+	loop_path_memory();
 }
