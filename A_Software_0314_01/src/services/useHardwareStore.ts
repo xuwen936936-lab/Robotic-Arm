@@ -405,6 +405,54 @@ export async function sendMockJogMove(command: JogMoveCommand) {
   })
 }
 
+// ==========================================
+// 这是你要插入的新函数，放在 useHardwareStore() 的正上方
+// ==========================================
+export function startFixedMoveTest(durationMs: number = 6000) {
+  if (typeof window === 'undefined') return
+
+  startTelemetry()
+  clearRunTimers()
+
+  const sentToRealHardware = sendBridgeCommand('FIXED_MOVE')
+  if (sentToRealHardware) {
+    sendBridgeCommand('TOGGLE_COORD')
+  }
+
+  setState({
+    connection: 'connected',
+    source: sentToRealHardware ? 'hardware' : 'mock',
+    isRunning: true,
+    temperature: getNextTemperature(true),
+    coords: sentToRealHardware ? state.coords : createMovingPoint(),
+  })
+
+  if (!sentToRealHardware) {
+    runIntervalId = window.setInterval(() => {
+      setState({
+        coords: createMovingPoint(),
+        temperature: getNextTemperature(true),
+      })
+    }, 450)
+  }
+
+  runTimeoutId = window.setTimeout(() => {
+    clearRunTimers()
+    if (sentToRealHardware) {
+      sendBridgeCommand('TOGGLE_COORD')
+      // 兼容同事的新架构：发送结束信号
+      hardwareSignalListeners.forEach((listener) => 
+        listener(HARDWARE_SIGNALS.TEST_TOOL_RUN_FINISHED)
+      )
+    }
+    setState({
+      isRunning: false,
+      temperature: getNextTemperature(false),
+      coords: sentToRealHardware ? state.coords : createMovingPoint(),
+    })
+  }, durationMs)
+}
+
 export function useHardwareStore() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
@@ -415,6 +463,7 @@ export function useHardwareStore() {
     resetMockRobotToHome,
     sendMockJogMove,
     startMockRun,
+    startFixedMoveTest, // <--- 就是在这里加上这一行！把它暴露给外部使用
   }
 }
 
