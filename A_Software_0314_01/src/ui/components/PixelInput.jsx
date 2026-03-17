@@ -27,7 +27,7 @@ export function PixelInput({
       <div
         style={{
           border: '2px solid var(--ink)',
-          boxShadow: variant === 'flat' ? 'none' : '4px 4px 0 var(--shadow)',
+          boxShadow: 'none',
           background: 'var(--panel)',
           height: variant === 'flat' ? '30px' : '40px',
           borderRadius: variant === 'flat' ? '4px' : '0px',
@@ -40,7 +40,7 @@ export function PixelInput({
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
-          className={`text-[12px] w-full bg-transparent outline-none border-none ${inputClassName}`}
+          className={`px text-[11px] w-full bg-transparent outline-none border-none ${inputClassName}`}
           style={{
             padding: '0 10px',
           }}

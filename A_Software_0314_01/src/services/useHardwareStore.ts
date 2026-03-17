@@ -133,7 +133,7 @@ function startTelemetry() {
 
   telemetryIntervalId = window.setInterval(() => {
     setState({
-      connection: isRealHardwareConnected ? state.connection : 'connected',
+      connection: isRealHardwareConnected ? state.connection : 'disconnected',
       source: isRealHardwareConnected ? 'hardware' : 'mock',
       temperature: getNextTemperature(state.isRunning),
     })
@@ -171,8 +171,22 @@ function emitHardwareSignal(signal: string) {
   hardwareSignalListeners.forEach((listener) => listener(signal))
 }
 
+export function simulateHardwareSignal(signal: string) {
+  emitHardwareSignal(signal)
+}
+
+function exposeRobotDebugApi() {
+  if (typeof window === 'undefined') return
+  ;(window as unknown as { __ROBOT_DEBUG__?: { emitSignal: (signal: string) => void } }).__ROBOT_DEBUG__ = {
+    emitSignal: simulateHardwareSignal,
+  }
+}
+
+exposeRobotDebugApi()
+
 function handleBridgePayload(payload: HardwarePayload) {
   if (payload.type === 'position' && payload.position) {
+    isRealHardwareConnected = true
     setState({
       source: 'hardware',
       connection: 'connected',
@@ -182,9 +196,12 @@ function handleBridgePayload(payload: HardwarePayload) {
   }
 
   if (payload.type === 'status') {
+    const mappedConnection = mapConnectionStatus(payload.status?.connection)
+    const realConnected = mappedConnection === 'connected'
+    isRealHardwareConnected = realConnected
     setState({
-      source: 'hardware',
-      connection: mapConnectionStatus(payload.status?.connection),
+      source: realConnected ? 'hardware' : 'mock',
+      connection: realConnected ? 'connected' : 'disconnected',
       coords: payload.status?.position ?? state.coords,
     })
     return
@@ -205,17 +222,17 @@ async function connectRealHardwareIfEnabled() {
     await candidate.connectDevice()
     bridge = candidate
     bridgeUnsubscribe = unsubscribe
-    isRealHardwareConnected = true
+    isRealHardwareConnected = false
     setState({
-      source: 'hardware',
-      connection: 'connected',
+      source: 'mock',
+      connection: 'disconnected',
     })
   } catch (_error) {
     unsubscribe()
     clearBridgeResources()
     setState({
       source: 'mock',
-      connection: 'connected',
+      connection: 'disconnected',
     })
   }
 }
@@ -255,8 +272,9 @@ function getSnapshot() {
 export function initializeHardwareStore() {
   activeConsumers += 1
   startTelemetry()
-  setState({ connection: 'connected' })
+  setState({ connection: 'disconnected', source: 'mock' })
   void connectRealHardwareIfEnabled()
+  exposeRobotDebugApi()
 
   return () => {
     activeConsumers = Math.max(0, activeConsumers - 1)
@@ -283,7 +301,7 @@ export function startMockRun(durationMs: number = 6000) {
   const sentToRealHardware = sendBridgeCommand('AUTO_RUN', { durationMs })
 
   setState({
-    connection: 'connected',
+    connection: sentToRealHardware ? 'connected' : 'disconnected',
     source: sentToRealHardware ? 'hardware' : 'mock',
     isRunning: true,
     temperature: getNextTemperature(true),
@@ -325,7 +343,7 @@ export function startFixedMoveTest(durationMs: number = 6000) {
   }
 
   setState({
-    connection: 'connected',
+    connection: sentToRealHardware ? 'connected' : 'disconnected',
     source: sentToRealHardware ? 'hardware' : 'mock',
     isRunning: true,
     temperature: getNextTemperature(true),
@@ -377,7 +395,7 @@ export async function resetMockRobotToHome() {
 
   setState({
     source: 'mock',
-    connection: 'connected',
+    connection: 'disconnected',
     isRunning: false,
     coords: createPoint(200, 100, 200, 0),
     temperature: getNextTemperature(false),
@@ -399,7 +417,7 @@ export async function sendMockJogMove(command: JogMoveCommand) {
 
   setState({
     source: 'mock',
-    connection: 'connected',
+    connection: 'disconnected',
     coords: applyJogMoveToCoords(command),
     temperature: getNextTemperature(false),
   })

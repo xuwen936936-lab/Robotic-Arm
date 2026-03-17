@@ -43,17 +43,17 @@ export function PixelSelect({
           className="w-full flex items-center justify-between text-left"
           style={{
             border: '2px solid var(--ink)',
-            boxShadow: variant === 'default' ? '4px 4px 0 var(--shadow)' : 'none',
+            boxShadow: 'none',
             background: 'var(--panel)',
             height: variant === 'default' ? '40px' : '30px',
             padding: '0 10px',
             borderRadius: variant === 'default' ? '0px' : '4px',
           }}
         >
-          <span className="text-[12px] leading-none truncate">
+          <span className="px text-[11px] leading-none truncate">
             {selected ? selected.label : ''}
           </span>
-          <span className="text-[10px] leading-none ml-2 shrink-0">
+          <span className="px text-[10px] leading-none ml-2 shrink-0">
             ▼
           </span>
         </button>
@@ -62,7 +62,7 @@ export function PixelSelect({
             className="absolute left-0 right-0 mt-1 z-30"
             style={{
               border: '2px solid var(--ink)',
-              boxShadow: variant === 'default' ? '4px 4px 0 var(--shadow)' : 'none',
+              boxShadow: 'none',
               background: 'var(--panel)',
               borderRadius: variant === 'default' ? '0px' : '4px',
               overflow: 'hidden',
@@ -73,7 +73,7 @@ export function PixelSelect({
                 key={opt.value}
                 type="button"
                 onClick={() => handleSelect(opt)}
-                className="w-full text-left text-[12px]"
+                className="w-full text-left px text-[11px]"
                 style={{
                   padding: '6px 10px',
                   background:

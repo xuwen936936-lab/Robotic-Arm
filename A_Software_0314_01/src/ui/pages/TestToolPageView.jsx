@@ -244,28 +244,26 @@ export function TestToolPageView({
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="flex-1" />
-
-            <div className="shrink-0 mt-4 w-full">
-              {isRunning ? (
-                <div className="testtool-running-shell w-full">
-                  <div className="running-bar testtool-running-fill" />
-                  <span className="testtool-running-label px text-[13px]">
-                    Running...
-                  </span>
-                </div>
-              ) : (
-                <PixelButton
-                  variant="magenta"
-                  className="w-full py-4 text-[12px]"
-                  onClick={onPrimaryAction}
-                  icon={isSuccess ? '🎉' : undefined}
-                >
-                  {primaryLabel}
-                </PixelButton>
-              )}
-            </div>
+          <div className="shrink-0 mt-6 w-full">
+            {isRunning ? (
+              <div className="testtool-running-shell w-full">
+                <div className="running-bar testtool-running-fill" />
+                <span className="testtool-running-label px text-[13px]">
+                  Running...
+                </span>
+              </div>
+            ) : (
+              <PixelButton
+                variant="magenta"
+                className="w-full py-4 text-[12px]"
+                onClick={onPrimaryAction}
+                icon={isSuccess ? '🎉' : undefined}
+              >
+                {primaryLabel}
+              </PixelButton>
+            )}
           </div>
         </PixelCard>
 

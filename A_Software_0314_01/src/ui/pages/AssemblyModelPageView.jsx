@@ -41,6 +41,7 @@ function JogAxisControl({ label, onNegative, onPositive }) {
 function CollisionHintModal({
   hintType,
   hintStep,
+  showWrongAnswerToast,
   selectedOption,
   onSelectOption,
   onClose,
@@ -51,6 +52,7 @@ function CollisionHintModal({
   const isSingularityHint = hintType === 'singularity'
   const expectedAnswer = isSingularityHint ? 'C' : isDirectionStepTwo ? 'A' : 'B'
   const canConfirm = selectedOption === expectedAnswer
+  const shouldDisableConfirm = hintType === 'waypoint' ? false : !canConfirm
   const primaryLabel = isDirectionStepOne ? 'NEXT' : 'Confirm'
   const visual =
     hintType === 'waypoint'
@@ -140,6 +142,11 @@ function CollisionHintModal({
   return (
     <div className="assembly-hint-overlay fixed inset-0 z-50 flex items-center justify-center">
       <div className="assembly-hint-modal pixel-card soft-grid p-10">
+        {showWrongAnswerToast && (
+          <div className="assembly-wrong-answer-toast px text-[12px]">
+            ⚠ Wrong answer
+          </div>
+        )}
         <div className="mb-8">
           <div className="assembly-hint-alert px text-[18px] mb-6 flex items-center">
             <span className="assembly-hint-icon">💡</span>
@@ -216,9 +223,9 @@ function CollisionHintModal({
           <PixelButton
             variant="magenta"
             className={`flex-1 py-4 text-[12px] ${
-              !canConfirm ? 'opacity-40 pointer-events-none' : ''
+              shouldDisableConfirm ? 'opacity-40 pointer-events-none' : ''
             }`}
-            disabled={!canConfirm}
+            disabled={shouldDisableConfirm}
             onClick={onConfirm}
           >
             {primaryLabel}
@@ -243,6 +250,7 @@ export function AssemblyModelPageView({
   isAssemblyRunning,
   hasCollision,
   showCollisionToast,
+  showWrongAnswerToast,
   showCollisionHintModal,
   selectedCollisionOption,
   collisionHintType,
@@ -592,6 +600,7 @@ export function AssemblyModelPageView({
         <CollisionHintModal
           hintType={collisionHintType}
           hintStep={collisionHintStep}
+          showWrongAnswerToast={showWrongAnswerToast}
           selectedOption={selectedCollisionOption}
           onSelectOption={onSelectCollisionOption}
           onClose={onCloseCollisionHint}
