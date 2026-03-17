@@ -62,6 +62,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
   const collisionSignalTimerRef = useRef(null)
   const waitingP2HardwareSignalRef = useRef(false)
   const waitingDirectionHardwareSignalRef = useRef(false)
+  const waitingSingularityHardwareSignalRef = useRef(false)
   const stageRef = useRef(stage)
   const waypointCountRef = useRef(waypoints.length)
 
@@ -124,6 +125,28 @@ export default function AssemblyModelPage({ onGoExecution }) {
         }
         setHasTriggeredDirectionCollision(true)
         triggerCollision('direction')
+        return
+      }
+
+      if (
+        waitingSingularityHardwareSignalRef.current &&
+        signal === HARDWARE_SIGNALS.ASSEMBLY_SINGULARITY_REACHED &&
+        stageRef.current === 'third-block'
+      ) {
+        waitingSingularityHardwareSignalRef.current = false
+        waitingP2HardwareSignalRef.current = false
+        waitingDirectionHardwareSignalRef.current = false
+        if (runCompleteTimerRef.current !== null) {
+          window.clearTimeout(runCompleteTimerRef.current)
+          runCompleteTimerRef.current = null
+        }
+        if (collisionSignalTimerRef.current !== null) {
+          window.clearTimeout(collisionSignalTimerRef.current)
+          collisionSignalTimerRef.current = null
+        }
+        setHasTriggeredSingularityCollision(true)
+        setHasSingularityWarning(true)
+        triggerCollision('singularity')
       }
     })
 
@@ -132,6 +155,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
       unsubscribeSignal()
       waitingP2HardwareSignalRef.current = false
       waitingDirectionHardwareSignalRef.current = false
+      waitingSingularityHardwareSignalRef.current = false
       if (runCompleteTimerRef.current !== null) {
         window.clearTimeout(runCompleteTimerRef.current)
       }
@@ -247,6 +271,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
     if (!canConfirmNow) return
     waitingP2HardwareSignalRef.current = false
     waitingDirectionHardwareSignalRef.current = false
+    waitingSingularityHardwareSignalRef.current = false
     if (hasSingularityWarning) {
       void resetMockRobotToHome()
       setHasSingularityWarning(false)
@@ -278,9 +303,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
     const isRealHardwarePath =
       hardware.source === 'hardware' && hardware.connection === 'connected'
     const shouldTriggerDirectionCollision = false
-    const shouldTriggerSingularityCollision =
-      stage === 'third-block' &&
-      !hasTriggeredSingularityCollision
+    const shouldTriggerSingularityCollision = false
 
     if (shouldTriggerWaypointCollision && isRealHardwarePath) {
       // P2 rule: in real hardware path, wait for the dedicated hardware signal.
@@ -292,6 +315,12 @@ export default function AssemblyModelPage({ onGoExecution }) {
       // Direction error is hardware-signal-driven in block 2.
       // In mock mode, signal can be injected via window.__ROBOT_DEBUG__.emitSignal(...)
       waitingDirectionHardwareSignalRef.current = true
+    }
+
+    if (stage === 'third-block' && !hasTriggeredSingularityCollision) {
+      // Singularity is hardware-signal-driven in block 3.
+      // In mock mode, signal can be injected via window.__ROBOT_DEBUG__.emitSignal(...)
+      waitingSingularityHardwareSignalRef.current = true
     }
 
     if (
@@ -319,6 +348,9 @@ export default function AssemblyModelPage({ onGoExecution }) {
 
     runCompleteTimerRef.current = window.setTimeout(() => {
       runCompleteTimerRef.current = null
+      waitingP2HardwareSignalRef.current = false
+      waitingDirectionHardwareSignalRef.current = false
+      waitingSingularityHardwareSignalRef.current = false
       setIsRunningPreview(false)
       setHasCollision(false)
       setShowSuccessModal(true)
@@ -328,6 +360,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
   const handleNextBlock = () => {
     waitingP2HardwareSignalRef.current = false
     waitingDirectionHardwareSignalRef.current = false
+    waitingSingularityHardwareSignalRef.current = false
     setShowSuccessModal(false)
     if (stage === 'first-block') {
       setStage('second-block')
@@ -374,6 +407,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
   const handleTryAgainCurrentBlock = () => {
     waitingP2HardwareSignalRef.current = false
     waitingDirectionHardwareSignalRef.current = false
+    waitingSingularityHardwareSignalRef.current = false
     setShowSuccessModal(false)
     setHasCollision(false)
     setShowCollisionToast(false)

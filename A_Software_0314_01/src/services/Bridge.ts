@@ -45,12 +45,16 @@ export interface HardwarePayload {
  * - During Assembly direction-error flow (second block), if E-stop is pressed before
  *   reaching final target point, output one line:
  *   SIGNAL:ASSEMBLY_ESTOP_BEFORE_TARGET
+ * - During Assembly singularity flow, if robot reaches a singular configuration,
+ *   output one line:
+ *   SIGNAL:ASSEMBLY_SINGULARITY_REACHED
  * - This line can come from serial output and will be parsed by the bridge.
  */
 export const HARDWARE_SIGNALS = {
   TEST_TOOL_RUN_FINISHED: 'TEST_TOOL_RUN_FINISHED',
   ASSEMBLY_REACHED_SPECIFIED_POINT: 'ASSEMBLY_REACHED_SPECIFIED_POINT',
   ASSEMBLY_ESTOP_BEFORE_TARGET: 'ASSEMBLY_ESTOP_BEFORE_TARGET',
+  ASSEMBLY_SINGULARITY_REACHED: 'ASSEMBLY_SINGULARITY_REACHED',
 } as const
 
 // --- 硬件层必须实现的接口 ---
