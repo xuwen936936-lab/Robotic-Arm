@@ -88,6 +88,10 @@ uint32_t action_time = 0;
 //0316
 bool is_emergency_triggered = false; // 全局标志位：记录是否触发过急停
 
+// === 新增：坐标系切换与偏移常量 ===
+uint8_t current_ref_frame = 0; // 0: Base坐标系, 1: Target坐标系
+const float TARGET_OFFSET_Y = 370.0; // Target原点在Base Y轴+370mm处
+
 void setup_nled();
 void setup_uart();
 void setup_beep();
@@ -846,7 +850,7 @@ void parse_cmd(char *cmd)
         }
     }
      else if (cmdStr.indexOf("$KMS:") != -1)
-{
+  {
     if (sscanf((char *)uart_receive_buf, "$KMS:%d,%d,%d,%d!", &int1, &int2, &int3, &int4))
     {
         if (kinematics_move(int1, int2, int3, int4))
@@ -857,7 +861,36 @@ void parse_cmd(char *cmd)
             Serial.println("Can not find best pos!!!");
         }
     }
-}
+  }
+
+    // ========================================================
+    // === 下面是为你新增的 Target 坐标系处理代码 ===
+    // ========================================================
+    else if (cmdStr.indexOf("$KMT:") != -1)
+    {
+        if (sscanf((char *)uart_receive_buf, "$KMT:%d,%d,%d,%d!", &int1, &int2, &int3, &int4))
+        {
+            // 核心变换：将 Target 坐标系下的 Y 转换回 Base 坐标系下的 Y (加上 370mm)
+            int base_y = int2 + (int)TARGET_OFFSET_Y;
+            if (kinematics_move(int1, base_y, int3, int4)) {
+                // Serial.println("Moved in Target Frame");
+            } else {
+                Serial.println("Can not find best pos in Target frame!!!");
+            }
+        }
+    }
+    else if (cmdStr.indexOf("$FRM:") != -1)
+    {
+        if (sscanf((char *)uart_receive_buf, "$FRM:%d!", &int1))
+        {
+            if (int1 == 0 || int1 == 1) {
+                current_ref_frame = int1;
+                Serial.print("[System] Reference Frame switched to: ");
+                Serial.println(int1 == 0 ? "BASE" : "TARGET");
+            }
+        }
+    }
+
 }
 
 void loop_action()

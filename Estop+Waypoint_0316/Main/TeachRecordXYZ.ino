@@ -9,6 +9,10 @@ extern void set_servo(int servo_index, int pwm_value, int move_time);
 extern void all_uart_send_str(char *str);
 extern void smart_delay_with_stop(unsigned long ms);
 
+// 引入环境变量
+extern uint8_t current_ref_frame;
+extern const float TARGET_OFFSET_Y;
+
 const float FK_L0 = 109.0;  
 const float FK_L1 = 105.0;  
 const float FK_L2 = 87.0;   
@@ -44,6 +48,27 @@ void set_torque_all(const char* cmd_suffix) {
 }
 
 // ... print_xyz_from_pwm 函数保持不变 ...
+// void print_xyz_from_pwm(int* pwm_array) {
+//     float pwm0 = pwm_array[0], pwm1 = pwm_array[1], pwm2 = pwm_array[2], pwm3 = pwm_array[3];
+//     float theta6 = (1500.0 - pwm0) * 270.0 / 2000.0;
+//     float theta5 = (pwm1 - 1500.0) * 270.0 / 2000.0 + 90.0;
+//     float theta4 = (pwm2 - 1500.0) * 270.0 / 2000.0;
+//     float theta3 = (pwm3 - 1500.0) * 270.0 / 2000.0;
+//     float alpha_deg = theta5 - theta4 + theta3;
+//     float t6 = theta6 * PI / 180.0, t5 = theta5 * PI / 180.0, t4 = theta4 * PI / 180.0, alpha = alpha_deg * PI / 180.0;
+//     float r = FK_L1 * cos(t5) + FK_L2 * cos(t5 - t4) + FK_L3_ACTUAL * cos(alpha);
+//     float z = FK_L0 + FK_L1 * sin(t5) + FK_L2 * sin(t5 - t4) + FK_L3_ACTUAL * sin(alpha);
+//     float x = r * sin(t6), y = r * cos(t6);
+
+//     Serial.println("--------------------------------------------------");
+//     Serial.print("📍 [Coords] X: "); Serial.print(x, 1);
+//     Serial.print(" mm | Y: "); Serial.print(y, 1);
+//     Serial.print(" mm | Z: "); Serial.print(z, 1);
+//     Serial.print(" mm | Pitch: "); Serial.print(alpha_deg, 1); Serial.println(" deg");
+//     Serial.println("--------------------------------------------------");
+// }
+
+// 修改这个函数
 void print_xyz_from_pwm(int* pwm_array) {
     float pwm0 = pwm_array[0], pwm1 = pwm_array[1], pwm2 = pwm_array[2], pwm3 = pwm_array[3];
     float theta6 = (1500.0 - pwm0) * 270.0 / 2000.0;
@@ -56,11 +81,21 @@ void print_xyz_from_pwm(int* pwm_array) {
     float z = FK_L0 + FK_L1 * sin(t5) + FK_L2 * sin(t5 - t4) + FK_L3_ACTUAL * sin(alpha);
     float x = r * sin(t6), y = r * cos(t6);
 
+    // --- 核心：根据当前选中的坐标系处理输出结果 ---
+    float out_x = x;
+    float out_y = y;
+    float out_z = z;
+
+    if (current_ref_frame == 1) { // 如果处于 Target 坐标系
+        out_y = y - TARGET_OFFSET_Y;
+    }
+
     Serial.println("--------------------------------------------------");
-    Serial.print("📍 [Coords] X: "); Serial.print(x, 1);
-    Serial.print(" mm | Y: "); Serial.print(y, 1);
-    Serial.print(" mm | Z: "); Serial.print(z, 1);
-    Serial.print(" mm | Pitch: "); Serial.print(alpha_deg, 1); Serial.println(" deg");
+    Serial.print("📍 [Coords] X: "); Serial.print(out_x, 1);
+    Serial.print(" mm | Y: "); Serial.print(out_y, 1);
+    Serial.print(" mm | Z: "); Serial.print(out_z, 1);
+    Serial.print(" mm | Pitch: ");
+    Serial.print(alpha_deg, 1); Serial.println(" deg");
     Serial.println("--------------------------------------------------");
 }
 
