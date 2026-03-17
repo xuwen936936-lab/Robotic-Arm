@@ -8,7 +8,7 @@ console.log("WebSocket server running at ws://localhost:8080");
 
 // 2. 打开 ESP32 串口
 const port = new SerialPort({
-  path: "/dev/cu.usbserial-140",   // 请确认这是否是你的真实串口名
+  path: "COM4",   // 请确认这是否是你的真实串口名
   baudRate: 115200,
 });
 
