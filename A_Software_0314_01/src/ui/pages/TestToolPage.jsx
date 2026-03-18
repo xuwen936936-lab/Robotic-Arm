@@ -76,57 +76,13 @@ export default function TestToolPage({ onStartGame }) {
     return () => window.clearTimeout(toastTimerId)
   }, [showToast])
 
-  // const handleTestClick = () => {
-  //   if (hardware.isRunning) return
-
-  //   setStatus('idle')
-  //   setShowToast(false)
-  //   setShowHintModal(false)
-  //   waitingHardwareResultRef.current = false
-  //   startFixedMoveTest(RUN_DURATION_MS)
-
-  //   if (resultTimerRef.current !== null) {
-  //     window.clearTimeout(resultTimerRef.current)
-  //   }
-
-  //   const isRealHardwarePath =
-  //     hardware.source === 'hardware' && hardware.connection === 'connected'
-
-  //   if (isRealHardwarePath) {
-  //     // Real hardware path: prefer hardware completion signal.
-  //     waitingHardwareResultRef.current = true
-  //   }
-
-  //   resultTimerRef.current = window.setTimeout(() => {
-  //     resultTimerRef.current = null
-  //     // Fallback for mock mode, and also safety fallback if hardware signal is missing.
-  //     waitingHardwareResultRef.current = false
-  //     if (selectedToolRef.current === 'Tool 1') {
-  //       setStatus('success')
-  //       return
-  //     }
-
-  //     setStatus('error')
-  //     setShowToast(true)
-  //   }, RUN_DURATION_MS)
-  // }
   const handleTestClick = () => {
     if (hardware.isRunning) return
 
     setStatus('idle')
     setShowToast(false)
     setShowHintModal(false)
-
-    // ==========================================
-    // 🛡️ 新增拦截器：如果不是 Tool 1，直接报错并终止，绝不触发硬件
-    // ==========================================
-    if (selectedTool !== 'Tool 1') {
-        setStatus('error')
-        setShowToast(true)
-        return 
-    }
-
-    // 只有过了安检（选了Tool 1），才真正下发指令
+    waitingHardwareResultRef.current = false
     startFixedMoveTest(RUN_DURATION_MS)
 
     if (resultTimerRef.current !== null) {
@@ -137,16 +93,19 @@ export default function TestToolPage({ onStartGame }) {
       hardware.source === 'hardware' && hardware.connection === 'connected'
 
     if (isRealHardwarePath) {
+      // Real hardware path: prefer hardware completion signal.
       waitingHardwareResultRef.current = true
     }
 
     resultTimerRef.current = window.setTimeout(() => {
       resultTimerRef.current = null
+      // Fallback for mock mode, and also safety fallback if hardware signal is missing.
       waitingHardwareResultRef.current = false
       if (selectedToolRef.current === 'Tool 1') {
         setStatus('success')
         return
       }
+
       setStatus('error')
       setShowToast(true)
     }, RUN_DURATION_MS)

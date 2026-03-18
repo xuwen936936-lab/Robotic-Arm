@@ -890,19 +890,6 @@ void parse_cmd(char *cmd)
             }
         }
     }
-    // ========================================================
-    // === 继电器 (电磁铁) 单独控制指令 === 需要让前端能够随时用 $MAG:1! 和 $MAG:0! 来控制电磁铁
-    // ========================================================
-    else if (cmdStr.indexOf("$MAG:") != -1)
-    {
-        if (sscanf((char *)uart_receive_buf, "$MAG:%d!", &int1))
-        {
-            pinMode(13, OUTPUT); // 确保 13 号引脚为输出
-            digitalWrite(13, int1 == 1 ? HIGH : LOW);
-            Serial.print("[System] Magnet set to: ");
-            Serial.println(int1 == 1 ? "ON" : "OFF");
-        }
-    }
 
 }
 
