@@ -477,6 +477,113 @@ export function startFixedMoveTest(durationMs: number = 6000) {
   }, durationMs)
 }
 
+// ==========================================
+// === Assembly 示教页面专属控制逻辑 ===
+// ==========================================
+
+export function startAssemblyTeachMode() {
+  sendBridgeCommand('UNLOCK')       // 卸力
+  sendBridgeCommand('TOGGLE_COORD') // 开启坐标流
+}
+
+export function setReferenceFrame(frame: 'Base' | 'Target') {
+  sendBridgeCommand(frame === 'Base' ? '$FRM:0!' : '$FRM:1!')
+}
+
+export function controlMagnet(isOn: boolean) {
+  sendBridgeCommand(isOn ? '$MAG:1!' : '$MAG:0!')
+}
+
+let assemblyAbortController: AbortController | null = null
+
+export function executeAssemblyPath(
+  pick: PointData,
+  waypoints: PointData[],
+  drop: PointData,
+  referenceFrame: 'Base' | 'Target'
+) {
+  if (assemblyAbortController) assemblyAbortController.abort()
+  assemblyAbortController = new AbortController()
+  const signal = assemblyAbortController.signal
+  const hasWaypoints = waypoints.length > 0
+
+  setState({ isRunning: true })
+
+  // 延时助手，支持被急停打断
+  const wait = (ms: number) => new Promise((resolve, reject) => {
+    const timeout = setTimeout(resolve, ms)
+    signal.addEventListener('abort', () => {
+      clearTimeout(timeout)
+      reject(new Error('ABORTED'))
+    })
+  })
+
+  // 监听底层的原生急停信号，并转化为对应的 UI 弹窗信号
+  const estopListener = (eventSignal: string) => {
+    if (eventSignal === 'RAW_ESTOP_TRIGGERED') {
+      if (assemblyAbortController) assemblyAbortController.abort()
+      
+      // 核心业务映射：没加途径点弹A，加了途径点弹B
+      if (!hasWaypoints) {
+        emitHardwareSignal(HARDWARE_SIGNALS.ASSEMBLY_REACHED_SPECIFIED_POINT)
+      } else {
+        emitHardwareSignal(HARDWARE_SIGNALS.ASSEMBLY_ESTOP_BEFORE_TARGET)
+      }
+      setState({ isRunning: false })
+    }
+  }
+  hardwareSignalListeners.add(estopListener)
+
+  const parsePt = (val: string) => Math.round(Number(val)) || 0
+
+  const runSequence = async () => {
+    try {
+      sendBridgeCommand('LOCK') // 执行前先锁死关节
+      await wait(500)
+
+      const cmdPrefix = referenceFrame === 'Base' ? '$KMS' : '$KMT'
+
+      // 1. 去起点
+      sendBridgeCommand(`${cmdPrefix}:${parsePt(pick.x)},${parsePt(pick.y)},${parsePt(pick.z)},2000!`)
+      await wait(2000)
+
+      // 2. 到达起点停顿 1.5s
+      await wait(1500)
+
+      // 3. 继电器上电吸磁
+      controlMagnet(true)
+
+      // 4. 保持磁性再等 1.5s
+      await wait(1500)
+
+      // 5. 走途径点
+      for (const wp of waypoints) {
+        if (!wp.x) continue; // 跳过空点
+        sendBridgeCommand(`${cmdPrefix}:${parsePt(wp.x)},${parsePt(wp.y)},${parsePt(wp.z)},2000!`)
+        await wait(2000)
+      }
+
+      // 6. 去终点
+      sendBridgeCommand(`${cmdPrefix}:${parsePt(drop.x)},${parsePt(drop.y)},${parsePt(drop.z)},2000!`)
+      await wait(2000)
+
+      // 7. 到达终点停顿 1.5s
+      await wait(1500)
+
+      // 8. 流程完美跑完（没被急停打断），继电器断电
+      controlMagnet(false)
+      setState({ isRunning: false })
+
+    } catch (e) {
+      // 被急停打断，什么都不用做，上面 estopListener 已经发了信号
+    } finally {
+      hardwareSignalListeners.delete(estopListener)
+    }
+  }
+
+  runSequence()
+}
+
 export function useHardwareStore() {
   const snapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 
@@ -488,6 +595,11 @@ export function useHardwareStore() {
     sendMockJogMove,
     startMockRun,
     startFixedMoveTest, // <--- 就是在这里加上这一行！把它暴露给外部使用
+    // Assembly页面 加入下面这四行！
+    startAssemblyTeachMode,
+    setReferenceFrame,
+    controlMagnet,
+    executeAssemblyPath,
   }
 }
 
