@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import {
+  HARDWARE_SIGNALS,
   captureCurrentPoint,
   initializeHardwareStore,
   resetMockRobotToHome,
   sendMockJogMove,
+  subscribeHardwareSignal,
   startMockRun,
   useHardwareStore,
 } from '../../services/useHardwareStore.ts'
@@ -42,6 +44,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [isRunningPreview, setIsRunningPreview] = useState(false)
   const [showCollisionToast, setShowCollisionToast] = useState(false)
+  const [showWrongAnswerToast, setShowWrongAnswerToast] = useState(false)
   const [hasCollision, setHasCollision] = useState(false)
   const [showCollisionHintModal, setShowCollisionHintModal] = useState(false)
   const [selectedCollisionOption, setSelectedCollisionOption] = useState(null)
@@ -57,6 +60,10 @@ export default function AssemblyModelPage({ onGoExecution }) {
   const [jogFrame, setJogFrame] = useState('Base')
   const runCompleteTimerRef = useRef(null)
   const collisionSignalTimerRef = useRef(null)
+  const waitingP2HardwareSignalRef = useRef(false)
+  const waitingDirectionHardwareSignalRef = useRef(false)
+  const stageRef = useRef(stage)
+  const waypointCountRef = useRef(waypoints.length)
 
   const canConfirm = isPointFilled(grab) && isPointFilled(drop)
   const requiresRecordedPoints = stage !== 'first-block'
@@ -70,9 +77,61 @@ export default function AssemblyModelPage({ onGoExecution }) {
   } · ${hardware.source === 'hardware' ? 'Real' : 'Virtual'}`
 
   useEffect(() => {
+    stageRef.current = stage
+  }, [stage])
+
+  useEffect(() => {
+    waypointCountRef.current = waypoints.length
+  }, [waypoints.length])
+
+  useEffect(() => {
     const cleanupHardware = initializeHardwareStore()
+    const unsubscribeSignal = subscribeHardwareSignal((signal) => {
+      if (
+        waitingP2HardwareSignalRef.current &&
+        signal === HARDWARE_SIGNALS.ASSEMBLY_REACHED_SPECIFIED_POINT &&
+        stageRef.current === 'second-block' &&
+        waypointCountRef.current < 1
+      ) {
+        waitingP2HardwareSignalRef.current = false
+        waitingDirectionHardwareSignalRef.current = false
+        if (runCompleteTimerRef.current !== null) {
+          window.clearTimeout(runCompleteTimerRef.current)
+          runCompleteTimerRef.current = null
+        }
+        if (collisionSignalTimerRef.current !== null) {
+          window.clearTimeout(collisionSignalTimerRef.current)
+          collisionSignalTimerRef.current = null
+        }
+        triggerCollision('waypoint')
+        return
+      }
+
+      if (
+        waitingDirectionHardwareSignalRef.current &&
+        signal === HARDWARE_SIGNALS.ASSEMBLY_ESTOP_BEFORE_TARGET &&
+        stageRef.current === 'second-block'
+      ) {
+        waitingDirectionHardwareSignalRef.current = false
+        waitingP2HardwareSignalRef.current = false
+        if (runCompleteTimerRef.current !== null) {
+          window.clearTimeout(runCompleteTimerRef.current)
+          runCompleteTimerRef.current = null
+        }
+        if (collisionSignalTimerRef.current !== null) {
+          window.clearTimeout(collisionSignalTimerRef.current)
+          collisionSignalTimerRef.current = null
+        }
+        setHasTriggeredDirectionCollision(true)
+        triggerCollision('direction')
+      }
+    })
+
     return () => {
       cleanupHardware()
+      unsubscribeSignal()
+      waitingP2HardwareSignalRef.current = false
+      waitingDirectionHardwareSignalRef.current = false
       if (runCompleteTimerRef.current !== null) {
         window.clearTimeout(runCompleteTimerRef.current)
       }
@@ -91,10 +150,19 @@ export default function AssemblyModelPage({ onGoExecution }) {
     return () => window.clearTimeout(toastTimerId)
   }, [showCollisionToast])
 
+  useEffect(() => {
+    if (!showWrongAnswerToast) return undefined
+    const toastTimerId = window.setTimeout(() => {
+      setShowWrongAnswerToast(false)
+    }, 2000)
+    return () => window.clearTimeout(toastTimerId)
+  }, [showWrongAnswerToast])
+
   const triggerCollision = (type) => {
     setIsRunningPreview(false)
     setHasCollision(true)
     setShowCollisionToast(true)
+    setShowWrongAnswerToast(false)
     setCollisionHintType(type)
     setCollisionHintStep(1)
     setSelectedCollisionOption(null)
@@ -177,11 +245,14 @@ export default function AssemblyModelPage({ onGoExecution }) {
   const handleConfirmTest = () => {
     if (isRunningPreview || hardware.isRunning) return
     if (!canConfirmNow) return
+    waitingP2HardwareSignalRef.current = false
+    waitingDirectionHardwareSignalRef.current = false
     if (hasSingularityWarning) {
       void resetMockRobotToHome()
       setHasSingularityWarning(false)
       setHasCollision(false)
       setShowCollisionToast(false)
+      setShowWrongAnswerToast(false)
       setShowCollisionHintModal(false)
       setSelectedCollisionOption(null)
       setIsAutomaticReassemblyReady(true)
@@ -190,6 +261,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
 
     setShowSuccessModal(false)
     setShowCollisionToast(false)
+    setShowWrongAnswerToast(false)
     setShowCollisionHintModal(false)
     setSelectedCollisionOption(null)
     setIsRunningPreview(true)
@@ -203,15 +275,24 @@ export default function AssemblyModelPage({ onGoExecution }) {
     }
 
     const shouldTriggerWaypointCollision = stage === 'second-block' && waypoints.length < 1
-    const hasManualWaypointInput = waypoints.some((waypoint) => waypoint.isManuallyEdited)
-    const shouldTriggerDirectionCollision =
-      stage === 'second-block' &&
-      waypoints.length > 0 &&
-      hasManualWaypointInput &&
-      !hasTriggeredDirectionCollision
+    const isRealHardwarePath =
+      hardware.source === 'hardware' && hardware.connection === 'connected'
+    const shouldTriggerDirectionCollision = false
     const shouldTriggerSingularityCollision =
       stage === 'third-block' &&
       !hasTriggeredSingularityCollision
+
+    if (shouldTriggerWaypointCollision && isRealHardwarePath) {
+      // P2 rule: in real hardware path, wait for the dedicated hardware signal.
+      waitingP2HardwareSignalRef.current = true
+      return
+    }
+
+    if (stage === 'second-block') {
+      // Direction error is hardware-signal-driven in block 2.
+      // In mock mode, signal can be injected via window.__ROBOT_DEBUG__.emitSignal(...)
+      waitingDirectionHardwareSignalRef.current = true
+    }
 
     if (
       shouldTriggerWaypointCollision ||
@@ -245,6 +326,8 @@ export default function AssemblyModelPage({ onGoExecution }) {
   }
 
   const handleNextBlock = () => {
+    waitingP2HardwareSignalRef.current = false
+    waitingDirectionHardwareSignalRef.current = false
     setShowSuccessModal(false)
     if (stage === 'first-block') {
       setStage('second-block')
@@ -261,6 +344,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
     setIsRunningPreview(false)
     setHasCollision(false)
     setShowCollisionToast(false)
+    setShowWrongAnswerToast(false)
     setShowCollisionHintModal(false)
     setSelectedCollisionOption(null)
     setCollisionHintType('waypoint')
@@ -288,9 +372,12 @@ export default function AssemblyModelPage({ onGoExecution }) {
   }
 
   const handleTryAgainCurrentBlock = () => {
+    waitingP2HardwareSignalRef.current = false
+    waitingDirectionHardwareSignalRef.current = false
     setShowSuccessModal(false)
     setHasCollision(false)
     setShowCollisionToast(false)
+    setShowWrongAnswerToast(false)
     setShowCollisionHintModal(false)
     setSelectedCollisionOption(null)
   }
@@ -320,6 +407,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
       isAssemblyRunning={isRunningPreview}
       hasCollision={hasCollision}
       showCollisionToast={showCollisionToast}
+      showWrongAnswerToast={showWrongAnswerToast}
       showCollisionHintModal={showCollisionHintModal}
       selectedCollisionOption={selectedCollisionOption}
       collisionHintType={collisionHintType}
@@ -349,31 +437,47 @@ export default function AssemblyModelPage({ onGoExecution }) {
       onSelectCollisionOption={setSelectedCollisionOption}
       onConfirmCollisionHint={() => {
         if (collisionHintType === 'singularity') {
-          if (selectedCollisionOption !== 'C') return
+          if (selectedCollisionOption !== 'C') {
+            setShowWrongAnswerToast(true)
+            return
+          }
           setShowCollisionHintModal(false)
           setSelectedCollisionOption(null)
           setHasCollision(false)
+          setShowWrongAnswerToast(false)
           return
         }
         if (collisionHintType === 'direction' && collisionHintStep === 1) {
-          if (selectedCollisionOption !== 'B') return
+          if (selectedCollisionOption !== 'B') {
+            setShowWrongAnswerToast(true)
+            return
+          }
           setCollisionHintStep(2)
           setSelectedCollisionOption(null)
+          setShowWrongAnswerToast(false)
           return
         }
         if (collisionHintType === 'direction' && collisionHintStep === 2) {
-          if (selectedCollisionOption !== 'A') return
+          if (selectedCollisionOption !== 'A') {
+            setShowWrongAnswerToast(true)
+            return
+          }
           setShowCollisionHintModal(false)
           setHasCollision(false)
           setSelectedCollisionOption(null)
           setShowRelativeHintInfo(true)
+          setShowWrongAnswerToast(false)
           return
         }
-        if (selectedCollisionOption !== 'B') return
+        if (selectedCollisionOption !== 'B') {
+          setShowWrongAnswerToast(true)
+          return
+        }
         setShowCollisionHintModal(false)
         setHasCollision(false)
         setSelectedCollisionOption(null)
         setShowRelativeHintInfo(true)
+        setShowWrongAnswerToast(false)
       }}
       onAddWaypoint={handleAddWaypoint}
       onRemoveWaypoint={handleRemoveWaypoint}

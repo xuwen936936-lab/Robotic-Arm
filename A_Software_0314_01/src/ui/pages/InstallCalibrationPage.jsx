@@ -52,6 +52,7 @@ export default function InstallCalibrationPage({ onNext }) {
   const [videoCompleted, setVideoCompleted] = useState(false)
   const [videoProgress, setVideoProgress] = useState(0)
   const videoContainerRef = useRef(null)
+  const leftScrollRef = useRef(null)
   const playerRef = useRef(null)
 
   useEffect(() => {
@@ -97,6 +98,14 @@ export default function InstallCalibrationPage({ onNext }) {
     return () => clearInterval(id)
   }, [])
 
+  useEffect(() => {
+    if (!videoCompleted || !leftScrollRef.current) return
+    leftScrollRef.current.scrollTo({
+      top: leftScrollRef.current.scrollHeight,
+      behavior: 'smooth',
+    })
+  }, [videoCompleted])
+
   const handleNextClick = () => {
     if (typeof onNext === 'function') {
       onNext()
@@ -126,7 +135,10 @@ export default function InstallCalibrationPage({ onNext }) {
             padding="p-6"
             className="min-h-0 max-h-full flex flex-col overflow-hidden"
           >
-            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-8">
+            <div
+              ref={leftScrollRef}
+              className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-8"
+            >
               {/* Step 1 */}
               <div className="flex gap-4">
                 <div className="flex-1 flex flex-col gap-4">
@@ -230,19 +242,19 @@ export default function InstallCalibrationPage({ onNext }) {
 
                         <div>
                           <div className="px text-[10px] mb-2">TCP</div>
-                          <div className="grid grid-cols-5 gap-2">
-                            {['X', 'Y', 'Z', 'Rx', 'Rz'].map((axis) => (
-                              <div key={axis} className="flex flex-col gap-1">
-                                <div className="px text-[9px]">{axis}</div>
+                          <div className="grid grid-cols-4 gap-2">
+                            {['X', 'Y', 'Z', 'Rx'].map((axis) => (
+                              <div key={axis} className="flex items-center gap-2 min-w-0">
+                                <div className="px text-[12px]">{axis}</div>
                                 <div
-                                  className="px text-[10px] text-center"
+                                  className="px text-[11px] text-center flex-1 min-w-0"
                                   style={{
                                     border: '2px solid var(--ink)',
                                     background: 'var(--panel)',
-                                    padding: '4px 6px',
+                                    padding: '6px 10px',
                                   }}
                                 >
-                                  {axis === 'Rx' || axis === 'Rz' ? '0.00' : '100.00'}
+                                  {axis === 'Rx' ? '0.00' : '100.00'}
                                 </div>
                               </div>
                             ))}

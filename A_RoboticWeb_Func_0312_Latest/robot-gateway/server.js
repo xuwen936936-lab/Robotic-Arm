@@ -14,13 +14,34 @@ const port = new SerialPort({
 
 // ✨ 核心升级：增加按行读取器，防止串口数据断截，让网页显示整齐划一
 const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+let serialConnected = false
 
 port.on("open", () => {
+  serialConnected = true
   console.log("Serial connected to ESP32");
+  if (currentClient && currentClient.readyState === WebSocket.OPEN) {
+    currentClient.send(
+      JSON.stringify({
+        type: "status",
+        status: { connection: "connected" },
+        message: "Serial connected",
+      }),
+    )
+  }
 });
 
 port.on("error", (err) => {
+  serialConnected = false
   console.error("Serial error:", err.message);
+  if (currentClient && currentClient.readyState === WebSocket.OPEN) {
+    currentClient.send(
+      JSON.stringify({
+        type: "status",
+        status: { connection: "error" },
+        message: err.message,
+      }),
+    )
+  }
 });
 
 let currentClient = null;
@@ -46,7 +67,8 @@ wss.on("connection", (ws) => {
 
   ws.send(JSON.stringify({
     type: "status",
-    message: "Node gateway connected",
+    status: { connection: serialConnected ? "connected" : "disconnected" },
+    message: serialConnected ? "Serial connected" : "Serial disconnected",
   }));
 
   // 浏览器发消息 → 转发给 ESP32

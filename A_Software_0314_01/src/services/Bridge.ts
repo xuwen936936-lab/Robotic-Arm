@@ -39,10 +39,18 @@ export interface HardwarePayload {
  * Integration contract for robot-side teammates:
  * - After finishing the pre-programmed Test Tool run, output one line:
  *   SIGNAL:TEST_TOOL_RUN_FINISHED
+ * - During Assembly P2 flow (no waypoint), if robot reaches a specified stop/checkpoint
+ *   instead of drop point, output one line:
+ *   SIGNAL:ASSEMBLY_REACHED_SPECIFIED_POINT
+ * - During Assembly direction-error flow (second block), if E-stop is pressed before
+ *   reaching final target point, output one line:
+ *   SIGNAL:ASSEMBLY_ESTOP_BEFORE_TARGET
  * - This line can come from serial output and will be parsed by the bridge.
  */
 export const HARDWARE_SIGNALS = {
   TEST_TOOL_RUN_FINISHED: 'TEST_TOOL_RUN_FINISHED',
+  ASSEMBLY_REACHED_SPECIFIED_POINT: 'ASSEMBLY_REACHED_SPECIFIED_POINT',
+  ASSEMBLY_ESTOP_BEFORE_TARGET: 'ASSEMBLY_ESTOP_BEFORE_TARGET',
 } as const
 
 // --- 硬件层必须实现的接口 ---
@@ -129,7 +137,8 @@ export function createWebSocketBridge(url: string = 'ws://localhost:8080'): IHar
         
         ws.onopen = () => {
           console.log("[Bridge] Connected to Node Gateway");
-          listener?.({ type: 'status', status: { connection: 'connected' } });
+          // WS connected != serial connected. Real hardware state should come from gateway status.
+          listener?.({ type: 'status', status: { connection: 'connecting' } });
           resolve();
         };
 
@@ -147,6 +156,21 @@ export function createWebSocketBridge(url: string = 'ws://localhost:8080'): IHar
         ws.onmessage = (event) => {
           try {
             const msg = JSON.parse(event.data);
+            if (msg.type === 'status') {
+              const statusConnection =
+                msg.status?.connection === 'connected'
+                  ? 'connected'
+                  : msg.status?.connection === 'error'
+                    ? 'error'
+                    : 'disconnected'
+
+              listener?.({
+                type: 'status',
+                status: { connection: statusConnection },
+              })
+              return
+            }
+
             if (msg.type === 'robot_serial' && msg.data) {
               const text = msg.data;
 
