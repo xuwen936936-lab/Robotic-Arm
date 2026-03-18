@@ -13,10 +13,10 @@ extern void smart_delay_with_stop(unsigned long ms); // 引用急停模块中的
 const int FIXED_INIT_POS[5]  = {1500, 1500, 1500, 1500, 1500}; 
 
 // 2. 设置【起点】舵机角度 (电磁铁去抓取的位置)
-const int FIXED_START_POS[5] = {1500, 1500, 1500, 1500, 1500}; 
+const int FIXED_START_POS[5] = {2155, 1112, 2096, 1158, 1500}; 
 
 // 3. 设置【终点】舵机角度 (电磁铁放置的位置)
-const int FIXED_END_POS[5]   = {1500, 1800, 1200, 1500, 1500}; 
+const int FIXED_END_POS[5]   = {1473, 1178,2075, 1724, 1500}; 
 
 // 4. 设置机械臂单次运动的时间 (毫秒)
 const int FIXED_MOVE_TIME = 2000; 
