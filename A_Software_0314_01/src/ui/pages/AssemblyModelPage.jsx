@@ -395,7 +395,7 @@ export default function AssemblyModelPage({ onGoExecution }) {
 
   const handleSuccessPrimaryAction = () => {
     setShowSuccessModal(false)
-    if (stage === 'third-block' && isAutomaticReassemblyReady) {
+    if (stage === 'third-block') {
       if (typeof onGoExecution === 'function') {
         onGoExecution()
       }
@@ -451,7 +451,14 @@ export default function AssemblyModelPage({ onGoExecution }) {
       successPrimaryLabel={
         stage === 'third-block' && isAutomaticReassemblyReady
           ? 'Automatic reassembly'
-          : 'Next block'
+          : stage === 'third-block'
+            ? 'Automatic run'
+            : 'Next block'
+      }
+      successSubline={
+        stage === 'third-block' && !isAutomaticReassemblyReady
+          ? 'AUTOMATIC RUN READY!'
+          : 'NEXT LEVEL UNLOCKED!'
       }
       jogFrame={jogFrame}
       hasSingularityWarning={hasSingularityWarning}

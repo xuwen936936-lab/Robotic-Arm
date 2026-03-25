@@ -4,6 +4,7 @@ import { PixelCard } from '../components/PixelCard.jsx'
 import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
 import { InlineStep } from '../components/InlineStep.jsx'
+import { InstallToolGuideImages } from '../components/InstallToolGuideImages.jsx'
 import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
 
 const steps = [
@@ -85,27 +86,7 @@ export default function InstallToolPage({ onInstalled }) {
               <div className="flex gap-4 items-start">
                 <div className="flex-1 flex flex-col gap-4">
                   <InlineStep index="1" label="Install the tool" />
-                  <div className="grid grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={index}
-                        className="flex items-center justify-center overflow-hidden"
-                        style={{
-                          border: '3px solid var(--ink)',
-                          boxShadow: '6px 6px 0 var(--shadow)',
-                          background: 'var(--panel)',
-                          minHeight: '72px',
-                        }}
-                      >
-                        <img
-                          src="/placeholders/illustration.svg"
-                          alt=""
-                          className="w-full h-full object-cover min-h-[72px]"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <InstallToolGuideImages />
                 </div>
               </div>
 

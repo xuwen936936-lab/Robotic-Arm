@@ -18,9 +18,7 @@ const steps = [
 
 const toolOptions = [
   { value: 'Flange', label: 'Flange' },
-  { value: 'Tool 1', label: 'Tool 1' },
-  { value: 'Gripper', label: 'Gripper' },
-  { value: 'Welder', label: 'Welder' },
+  { value: 'Tool A', label: 'Tool A' },
 ]
 
 const hintOptions = [
@@ -151,6 +149,7 @@ export function TestToolPageView({
   showHintModal,
   selectedOption,
   selectedTool,
+  payloadValue,
   onSelectTool,
   onSelectOption,
   onPrimaryAction,
@@ -197,24 +196,28 @@ export function TestToolPageView({
 
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-4">
-                <PixelSelect
-                  className="w-full"
-                  label="TOOL"
-                  value={selectedTool}
-                  onChange={onSelectTool}
-                  options={toolOptions}
-                />
-                <PixelInput
-                  label="PAYLOAD"
-                  value="Mock"
-                  className="w-full"
-                  readOnly
-                />
+                <div className="flex items-center gap-2">
+                  <div className="px text-[12px] shrink-0">TOOL</div>
+                  <PixelSelect
+                    className="flex-1 min-w-0"
+                    value={selectedTool}
+                    onChange={onSelectTool}
+                    options={toolOptions}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="px text-[12px] shrink-0">PAYLOAD</div>
+                  <PixelInput
+                    value={payloadValue}
+                    className="flex-1 min-w-0"
+                    readOnly
+                  />
+                </div>
               </div>
 
-              <div className="mt-1">
-                <div className="px text-[12px] mb-1">TCP</div>
-                <div className="grid grid-cols-4 gap-6">
+              <div className="mt-1 flex items-center gap-3">
+                <div className="px text-[12px] shrink-0">TCP</div>
+                <div className="grid grid-cols-4 gap-6 flex-1 min-w-0">
                   {[
                     { axis: 'X', value: coords.x },
                     { axis: 'Y', value: coords.y },

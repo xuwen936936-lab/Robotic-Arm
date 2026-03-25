@@ -258,6 +258,7 @@ export function AssemblyModelPageView({
   showRelativeHintInfo,
   showSuccessModal,
   successPrimaryLabel,
+  successSubline = 'NEXT LEVEL UNLOCKED!',
   jogFrame,
   hasSingularityWarning,
   connectionInfo,
@@ -573,7 +574,7 @@ export function AssemblyModelPageView({
                 Assembly complete!
               </div>
               <div className="assembly-success-text px text-[20px] mb-8">
-                NEXT LEVEL UNLOCKED!
+                {successSubline}
               </div>
               <div className="flex items-center gap-4">
                 <PixelButton

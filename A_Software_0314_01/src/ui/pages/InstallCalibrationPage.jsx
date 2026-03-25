@@ -5,9 +5,10 @@ import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
 import { PixelProgressBar } from '../components/PixelProgressBar.jsx'
 import { InlineStep } from '../components/InlineStep.jsx'
+import { InstallToolGuideImages } from '../components/InstallToolGuideImages.jsx'
 import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
 
-const YOUTUBE_VIDEO_ID = 'jNQXAC9IVRw'
+const YOUTUBE_VIDEO_ID = 'q7YXq3LCzTM'
 
 const steps = [
   {
@@ -108,7 +109,9 @@ export default function InstallCalibrationPage({ onNext }) {
 
   const handleNextClick = () => {
     if (typeof onNext === 'function') {
-      onNext()
+      onNext({
+        calibratedPayload: '2kg',
+      })
     }
   }
 
@@ -143,21 +146,7 @@ export default function InstallCalibrationPage({ onNext }) {
               <div className="flex gap-4">
                 <div className="flex-1 flex flex-col gap-4">
                   <InlineStep index="1" label="Install the tool" />
-                  <div className="grid grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={index}
-                        className="flex items-center justify-center"
-                        style={{
-                          border: '3px solid var(--ink)',
-                          boxShadow: '6px 6px 0 var(--shadow)',
-                          background: 'var(--panel)',
-                          minHeight: '72px',
-                        }}
-                      />
-                    ))}
-                  </div>
+                  <InstallToolGuideImages />
                 </div>
               </div>
 
@@ -175,10 +164,10 @@ export default function InstallCalibrationPage({ onNext }) {
 
                   <div className="grid grid-cols-2 gap-6">
                     <div
-                      className="pixel-card overflow-hidden min-h-[200px]"
+                      className="pixel-card overflow-hidden min-h-[150px]"
                       style={{ background: 'var(--panel)' }}
                     >
-                      <div ref={videoContainerRef} className="w-full h-full min-h-[200px]" />
+                      <div ref={videoContainerRef} className="w-full h-full min-h-[150px]" />
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -212,10 +201,10 @@ export default function InstallCalibrationPage({ onNext }) {
 
                       <div className="flex flex-col gap-4">
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <div className="px text-[10px] mb-1">Name</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-[10px] shrink-0">Name</div>
                             <div
-                              className="px text-[11px]"
+                              className="text-[11px] flex-1 min-w-0"
                               style={{
                                 border: '2px solid var(--ink)',
                                 background: 'var(--panel)',
@@ -225,10 +214,10 @@ export default function InstallCalibrationPage({ onNext }) {
                               Tool A
                             </div>
                           </div>
-                          <div>
-                            <div className="px text-[10px] mb-1">Payload</div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-[10px] shrink-0">Payload</div>
                             <div
-                              className="px text-[11px]"
+                              className="text-[11px] flex-1 min-w-0"
                               style={{
                                 border: '2px solid var(--ink)',
                                 background: 'var(--panel)',
@@ -240,14 +229,14 @@ export default function InstallCalibrationPage({ onNext }) {
                           </div>
                         </div>
 
-                        <div>
-                          <div className="px text-[10px] mb-2">TCP</div>
-                          <div className="grid grid-cols-4 gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="text-[10px] shrink-0">TCP</div>
+                          <div className="grid grid-cols-4 gap-2 flex-1 min-w-0">
                             {['X', 'Y', 'Z', 'Rx'].map((axis) => (
                               <div key={axis} className="flex items-center gap-2 min-w-0">
-                                <div className="px text-[12px]">{axis}</div>
+                                <div className="text-[12px]">{axis}</div>
                                 <div
-                                  className="px text-[11px] text-center flex-1 min-w-0"
+                                  className="text-[11px] text-center flex-1 min-w-0"
                                   style={{
                                     border: '2px solid var(--ink)',
                                     background: 'var(--panel)',

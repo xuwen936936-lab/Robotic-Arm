@@ -10,7 +10,7 @@ import { TestToolPageView } from './TestToolPageView.jsx'
 
 const RUN_DURATION_MS = 6000
 
-export default function TestToolPage({ onStartGame }) {
+export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' }) {
   const hardware = useHardwareStore()
   const [status, setStatus] = useState('idle')
   const [showToast, setShowToast] = useState(false)
@@ -23,6 +23,7 @@ export default function TestToolPage({ onStartGame }) {
 
   const hasError = status === 'error'
   const isSuccess = status === 'success'
+  const payloadValue = selectedTool === 'Tool A' ? calibratedPayload : '0'
   const connectionInfo = `${
     hardware.connection === 'connected'
       ? 'Connected'
@@ -47,7 +48,7 @@ export default function TestToolPage({ onStartGame }) {
         resultTimerRef.current = null
       }
 
-      if (selectedToolRef.current === 'Tool 1') {
+      if (selectedToolRef.current === 'Tool A') {
         setStatus('success')
         return
       }
@@ -101,7 +102,7 @@ export default function TestToolPage({ onStartGame }) {
       resultTimerRef.current = null
       // Fallback for mock mode, and also safety fallback if hardware signal is missing.
       waitingHardwareResultRef.current = false
-      if (selectedToolRef.current === 'Tool 1') {
+      if (selectedToolRef.current === 'Tool A') {
         setStatus('success')
         return
       }
@@ -122,6 +123,7 @@ export default function TestToolPage({ onStartGame }) {
       showHintModal={showHintModal}
       selectedOption={selectedOption}
       selectedTool={selectedTool}
+      payloadValue={payloadValue}
       onSelectTool={setSelectedTool}
       onSelectOption={setSelectedOption}
       onPrimaryAction={
