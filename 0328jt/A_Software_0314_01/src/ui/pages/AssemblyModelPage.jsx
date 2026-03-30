@@ -4,6 +4,7 @@ import {
   captureCurrentPoint,
   initializeHardwareStore,
   resetMockRobotToHome,
+  sendAssemblyTeachEnable,
   sendMockJogMove,
   subscribeHardwareSignal,
   startMockRun,
@@ -463,6 +464,9 @@ export default function AssemblyModelPage({ onGoExecution }) {
       jogFrame={jogFrame}
       hasSingularityWarning={hasSingularityWarning}
       connectionInfo={connectionInfo}
+      onEnableTeach={() => {
+        sendAssemblyTeachEnable()
+      }}
       onToggleMode={() => setMode((prev) => (prev === 'pick' ? 'drop' : 'pick'))}
       onConfirmTest={handleConfirmTest}
       onNextBlock={handleNextBlock}

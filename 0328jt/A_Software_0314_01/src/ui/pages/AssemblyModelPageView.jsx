@@ -264,6 +264,7 @@ export function AssemblyModelPageView({
   jogFrame,
   hasSingularityWarning,
   connectionInfo,
+  onEnableTeach,
   onToggleMode,
   onConfirmTest,
   onNextBlock,
@@ -300,6 +301,13 @@ export function AssemblyModelPageView({
           Lion Model Assembly Game
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            className="connection-pill px text-[9px] px-2 py-2 cursor-pointer select-none hover:brightness-[0.97] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_var(--shadow)]"
+            onClick={onEnableTeach}
+          >
+            Enable
+          </button>
           <div className="connection-pill px text-[9px] px-2 py-2">
             {connectionInfo}
           </div>
