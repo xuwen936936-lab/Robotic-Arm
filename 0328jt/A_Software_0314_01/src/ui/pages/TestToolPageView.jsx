@@ -7,6 +7,7 @@ import { PixelSelect } from '../components/PixelSelect.jsx'
 import { PixelInput } from '../components/PixelInput.jsx'
 import { PixelToast } from '../components/PixelToast.jsx'
 import { PixelRadio } from '../components/PixelRadio.jsx'
+import { mediaAssets } from '../mediaAssets.js'
 import './TestToolPageView.css'
 
 const steps = [
@@ -18,9 +19,7 @@ const steps = [
 
 const toolOptions = [
   { value: 'Flange', label: 'Flange' },
-  { value: 'Tool 1', label: 'Tool 1' },
-  { value: 'Gripper', label: 'Gripper' },
-  { value: 'Welder', label: 'Welder' },
+  { value: 'Tool A', label: 'Tool A' },
 ]
 
 const hintOptions = [
@@ -82,7 +81,7 @@ function HintModal({
                 <div className="flex-1 overflow-hidden flex items-center justify-center mb-2">
                   <img
                     className="testtool-hint-image"
-                    src="/placeholders/chopsticks-illustration.svg"
+                    src={mediaAssets.toolTestHintIllustration}
                     alt="Eating with the chopsticks"
                   />
                 </div>
@@ -151,6 +150,7 @@ export function TestToolPageView({
   showHintModal,
   selectedOption,
   selectedTool,
+  payloadValue,
   onSelectTool,
   onSelectOption,
   onPrimaryAction,
@@ -184,12 +184,12 @@ export function TestToolPageView({
         message="Collision occurred! Try to solve it"
       />
 
-      <div className="grid lg:grid-cols-[4fr_3fr] gap-8 flex-1 min-h-0">
+      <div className="grid max-lg:grid-cols-1 max-lg:[grid-auto-rows:max-content] max-lg:flex-none gap-8 lg:grid-cols-[4fr_3fr] lg:flex-1 lg:min-h-0">
         <PixelCard
           padding="p-6"
-          className="min-h-0 max-h-full flex flex-col overflow-hidden"
+          className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
         >
-          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-6 pb-6">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-6 pb-6 max-lg:min-h-min max-lg:flex-none max-lg:overflow-visible">
             <div className="testtool-intro px text-[13px]">
               Check your tool, pick up the teddy bear, and complete the tool test to
               begin the game.
@@ -197,24 +197,28 @@ export function TestToolPageView({
 
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-4">
-                <PixelSelect
-                  className="w-full"
-                  label="TOOL"
-                  value={selectedTool}
-                  onChange={onSelectTool}
-                  options={toolOptions}
-                />
-                <PixelInput
-                  label="PAYLOAD"
-                  value="Mock"
-                  className="w-full"
-                  readOnly
-                />
+                <div className="flex items-center gap-2">
+                  <div className="px text-[12px] shrink-0">TOOL</div>
+                  <PixelSelect
+                    className="flex-1 min-w-0"
+                    value={selectedTool}
+                    onChange={onSelectTool}
+                    options={toolOptions}
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="px text-[12px] shrink-0">PAYLOAD</div>
+                  <PixelInput
+                    value={payloadValue}
+                    className="flex-1 min-w-0"
+                    readOnly
+                  />
+                </div>
               </div>
 
-              <div className="mt-1">
-                <div className="px text-[12px] mb-1">TCP</div>
-                <div className="grid grid-cols-4 gap-6">
+              <div className="mt-1 flex items-center gap-3">
+                <div className="px text-[12px] shrink-0">TCP</div>
+                <div className="grid grid-cols-4 gap-6 flex-1 min-w-0">
                   {[
                     { axis: 'X', value: coords.x },
                     { axis: 'Y', value: coords.y },
@@ -270,17 +274,15 @@ export function TestToolPageView({
         <PixelCard
           title="3D ROBOT MODEL"
           titleColor="var(--orange)"
-          className="min-h-0 max-h-full flex flex-col overflow-hidden"
+          className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
         >
-          <div className="testtool-model-stage flex-1 min-h-0 overflow-y-auto flex items-center justify-center">
-            <div className="relative w-full h-full flex items-center justify-center py-16">
-              <div className="text-center">
-                <div className="px text-[16px] mb-2">3D Robot Model</div>
-                <div className="testtool-model-subtitle px text-[12px]">
-                  Mock preview for Monday sync
-                </div>
-              </div>
-
+          <div className="testtool-model-stage flex min-h-0 flex-1 flex-col max-lg:flex-none">
+            <div className="testtool-model-cover-wrap max-lg:min-h-[min(52vh,340px)]">
+              <img
+                src={mediaAssets.robot3dPreview}
+                alt="Robot arm hardware preview"
+                className="testtool-model-cover-img"
+              />
               {hasError && (
                 <button
                   className="testtool-hint-trigger"

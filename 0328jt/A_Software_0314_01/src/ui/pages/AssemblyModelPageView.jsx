@@ -7,6 +7,8 @@ import { PixelRadio } from '../components/PixelRadio.jsx'
 import { StepBar } from '../components/StepBar.jsx'
 import { PixelSelect } from '../components/PixelSelect.jsx'
 import { TrajectoryPointCard } from '../components/TrajectoryPointCard.jsx'
+import { CelebrationImage } from '../components/CelebrationImage.jsx'
+import '../components/TrajectoryPointCard.css'
 import './AssemblyModelPageView.css'
 
 const steps = [
@@ -258,6 +260,7 @@ export function AssemblyModelPageView({
   showRelativeHintInfo,
   showSuccessModal,
   successPrimaryLabel,
+  successSubline = 'NEXT LEVEL UNLOCKED!',
   jogFrame,
   hasSingularityWarning,
   connectionInfo,
@@ -314,12 +317,12 @@ export function AssemblyModelPageView({
         message="Collision occurred! Try to solve it"
       />
 
-      <div className="grid lg:grid-cols-[4fr_3fr] gap-8 flex-1 min-h-0 max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid max-lg:grid-cols-1 max-lg:[grid-auto-rows:max-content] max-lg:flex-none gap-8 lg:grid-cols-[4fr_3fr] lg:flex-1 lg:min-h-0">
         <PixelCard
           padding="p-6"
-          className="min-h-0 max-h-full flex flex-col overflow-hidden"
+          className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
         >
-          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-4 pr-4 pb-6">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-4 pb-6 max-lg:min-h-min max-lg:flex-none max-lg:overflow-visible">
             <div className="assembly-intro assembly-intro-prominent assembly-trajectory-title text-[20px] leading-[1.2] font-bold">
               Drag the robot&apos;s end effector to teach it where to pick and place the
               block.
@@ -371,12 +374,12 @@ export function AssemblyModelPageView({
 
             <PixelCard
               padding="p-4"
-              className={`flex-1 min-h-0 overflow-visible assembly-trajectory-shell ${
+              className={`flex min-h-0 flex-1 overflow-visible assembly-trajectory-shell max-lg:flex-none max-lg:min-h-min ${
                 hasSingularityWarning ? 'assembly-danger-shell' : ''
               }`}
             >
               <div
-                className="assembly-trajectory-scroll flex-1 min-h-0 overflow-y-auto flex flex-col gap-3"
+                className="assembly-trajectory-scroll flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto max-lg:min-h-min max-lg:flex-none max-lg:overflow-visible"
               >
                 <TrajectoryPointCard
                   accent="magenta"
@@ -409,12 +412,11 @@ export function AssemblyModelPageView({
                 ))}
 
                 {showAddWaypoint && (
-                  <div className="flex justify-center my-2">
+                  <div className="my-2 flex justify-center">
                     <button
                       type="button"
                       onClick={onAddWaypoint}
-                      className="w-8 h-8 rounded-full border-2 border-[var(--ink)] flex items-center justify-center text-[18px]"
-                      style={{ background: 'var(--panel)' }}
+                      className="waypoint-pixel-circle-btn waypoint-pixel-circle-btn--add px"
                       aria-label="Add waypoint"
                     >
                       +
@@ -476,12 +478,12 @@ export function AssemblyModelPageView({
         <PixelCard
           title="3D ROBOT MODEL"
           titleColor="var(--orange)"
-          className="min-h-0 max-h-full flex flex-col overflow-hidden"
+          className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
         >
           <div
-            className="assembly-model-stage flex-1 min-h-0 overflow-y-auto flex items-center justify-center"
+            className="assembly-model-stage flex min-h-0 flex-1 items-center justify-center overflow-y-auto max-lg:min-h-[min(52vh,340px)] max-lg:flex-none"
           >
-            <div className="relative w-full h-full flex items-center justify-center py-16">
+            <div className="relative flex w-full items-center justify-center py-16 max-lg:min-h-min h-full">
               <div className="text-center">
                 <div className="px text-[16px] mb-2">Lion Model</div>
                 <div className="assembly-muted px text-[12px]">
@@ -562,18 +564,16 @@ export function AssemblyModelPageView({
         >
           <div className="w-full max-w-xl px-6">
             <div className="text-center">
-              <div className="assembly-modal-gif mx-auto mb-6 flex items-center justify-center">
-                <img
-                  className="assembly-modal-gif-image"
-                  src="/placeholders/celebration-gif.gif"
-                  alt="Celebration gif"
-                />
-              </div>
+              <CelebrationImage
+                frameClassName="assembly-modal-gif mx-auto mb-6"
+                imageClassName="assembly-modal-gif-image"
+                alt="Celebration"
+              />
               <div className="assembly-success-text px text-[20px] mb-3">
                 Assembly complete!
               </div>
               <div className="assembly-success-text px text-[20px] mb-8">
-                NEXT LEVEL UNLOCKED!
+                {successSubline}
               </div>
               <div className="flex items-center gap-4">
                 <PixelButton

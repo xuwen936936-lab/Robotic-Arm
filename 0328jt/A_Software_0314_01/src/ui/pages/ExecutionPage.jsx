@@ -4,6 +4,8 @@ import { PixelCard } from '../components/PixelCard.jsx'
 import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
 import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
+import { mediaAssets } from '../mediaAssets.js'
+import { CelebrationImage } from '../components/CelebrationImage.jsx'
 import './ExecutionPage.css'
 
 const steps = [
@@ -16,6 +18,14 @@ const steps = [
 const EXECUTION_SUCCESS_MS = 5200
 const DANGER_SIGNAL_MS = 2300
 
+function getInitialPhase() {
+  if (import.meta.env.DEV && typeof window !== 'undefined') {
+    const q = new URLSearchParams(window.location.search)
+    if (q.get('preview') === 'execution-success') return 'success'
+  }
+  return 'idle'
+}
+
 export default function ExecutionPage({ onRestartGame }) {
   const hardware = useHardwareStore()
   const connectionInfo = `${
@@ -25,7 +35,7 @@ export default function ExecutionPage({ onRestartGame }) {
         ? 'Error'
         : 'Disconnected'
   } · ${hardware.source === 'hardware' ? 'Real' : 'Virtual'}`
-  const [phase, setPhase] = useState('idle') // idle | running | paused-danger | success
+  const [phase, setPhase] = useState(getInitialPhase) // idle | running | paused-danger | success
   const [progress, setProgress] = useState(0)
   const [dangerWarning, setDangerWarning] = useState(false)
   const [hasTriggeredDangerSignal, setHasTriggeredDangerSignal] = useState(false)
@@ -93,10 +103,18 @@ export default function ExecutionPage({ onRestartGame }) {
       <PageLayout>
         <div className="execution-success-screen">
           <div className="execution-success-card">
-            <div className="execution-success-model">
-              <div className="execution-success-model-inner">
-                <div className="execution-success-title">Congratulations!</div>
-                <div className="execution-success-subtitle">Lion Gif</div>
+            <div className="execution-success-panel">
+              <CelebrationImage
+                frameClassName="execution-success-dashed-frame"
+                imageClassName="execution-success-celebration-gif"
+                alt=""
+                adaptAspect
+              />
+              <div className="execution-success-copy">
+                <div className="execution-success-title px">Congratulations!</div>
+                <div className="execution-success-subtitle px">
+                  You finished every mission!
+                </div>
               </div>
             </div>
           </div>
@@ -128,12 +146,12 @@ export default function ExecutionPage({ onRestartGame }) {
 
       <StepBar steps={steps} />
 
-      <div className="grid lg:grid-cols-[4fr_3fr] gap-8 flex-1 min-h-0 max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+      <div className="grid max-lg:grid-cols-1 max-lg:[grid-auto-rows:max-content] max-lg:flex-none gap-8 lg:grid-cols-[4fr_3fr] lg:flex-1 lg:min-h-0">
         <PixelCard
           padding="p-6"
-          className="min-h-0 max-h-full flex flex-col overflow-hidden"
+          className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
         >
-          <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-5">
+          <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto max-lg:min-h-min max-lg:flex-none max-lg:overflow-visible">
             <div className="execution-title px text-[24px]">Debugging complete!</div>
             <div className="execution-paragraph text-[18px] leading-[1.35]">
               Reset the blocks, then run the robot in automatic mode to finish the
@@ -146,7 +164,7 @@ export default function ExecutionPage({ onRestartGame }) {
 
             <div className="execution-danger-map">
               <img
-                src="/placeholders/execution-warning-map-clean.png"
+                src={mediaAssets.executionWarningMapClean}
                 alt="Warning area and singularity map"
                 className="execution-danger-image"
               />
@@ -177,18 +195,21 @@ export default function ExecutionPage({ onRestartGame }) {
         <PixelCard
           title="3D ROBOT MODEL"
           titleColor="var(--orange)"
-          className="min-h-0 max-h-full flex flex-col overflow-hidden"
+          className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
         >
-          <div className="assembly-model-stage flex-1 min-h-0 overflow-y-auto flex items-center justify-center">
-            <div className="text-center">
-              <div className="px text-[44px] mb-4">Lion Model</div>
-              <div className="assembly-muted px text-[36px]">waiting for completing</div>
-              {dangerWarning && (
-                <div className="execution-danger-warning px mt-6">
-                  Don&apos;t step in the dangerous area
-                </div>
-              )}
+          <div className="assembly-model-stage execution-model-card-stage flex min-h-0 flex-1 flex-col overflow-hidden max-lg:min-h-[min(52vh,340px)] max-lg:flex-none">
+            <div className="execution-model-dashed-inner">
+              <img
+                src={mediaAssets.lionVoxelAutoRun}
+                alt="Lion voxel model"
+                className="execution-card-model-image"
+              />
             </div>
+            {dangerWarning && (
+              <div className="execution-danger-warning px py-2 text-center shrink-0">
+                Don&apos;t step in the dangerous area
+              </div>
+            )}
           </div>
         </PixelCard>
       </div>

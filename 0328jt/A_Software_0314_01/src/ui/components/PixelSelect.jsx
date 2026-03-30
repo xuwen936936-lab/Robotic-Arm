@@ -1,4 +1,9 @@
 import React, { useState } from 'react'
+import {
+  CONTROL_ARROW_TEXT_SIZE_CLASS,
+  CONTROL_OPTION_TEXT_SIZE_CLASS,
+  CONTROL_TEXT_SIZE_CLASS,
+} from './controlTypography.js'
 
 export function PixelSelect({
   label,
@@ -50,10 +55,10 @@ export function PixelSelect({
             borderRadius: variant === 'default' ? '0px' : '4px',
           }}
         >
-          <span className="px text-[11px] leading-none truncate">
+          <span className={`${CONTROL_TEXT_SIZE_CLASS} leading-none truncate`}>
             {selected ? selected.label : ''}
           </span>
-          <span className="px text-[10px] leading-none ml-2 shrink-0">
+          <span className={`${CONTROL_ARROW_TEXT_SIZE_CLASS} leading-none ml-2 shrink-0`}>
             ▼
           </span>
         </button>
@@ -73,7 +78,7 @@ export function PixelSelect({
                 key={opt.value}
                 type="button"
                 onClick={() => handleSelect(opt)}
-                className="w-full text-left px text-[11px]"
+                className={`w-full text-left ${CONTROL_OPTION_TEXT_SIZE_CLASS}`}
                 style={{
                   padding: '6px 10px',
                   background:
