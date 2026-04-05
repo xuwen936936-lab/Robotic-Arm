@@ -1,4 +1,5 @@
 import React from 'react'
+import { CONTROL_TEXT_SIZE_CLASS } from './controlTypography.js'
 
 export function PixelInput({
   label,
@@ -40,7 +41,7 @@ export function PixelInput({
           value={value}
           onChange={handleChange}
           placeholder={placeholder}
-          className={`px text-[11px] w-full bg-transparent outline-none border-none ${inputClassName}`}
+          className={`${CONTROL_TEXT_SIZE_CLASS} w-full bg-transparent outline-none border-none ${inputClassName}`}
           style={{
             padding: '0 10px',
           }}

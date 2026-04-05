@@ -171,7 +171,7 @@ import { TestToolPageView } from './TestToolPageView.jsx'
 
 const RUN_DURATION_MS = 6000
 
-export default function TestToolPage({ onStartGame }) {
+export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' }) {
   const hardware = useHardwareStore()
   const [status, setStatus] = useState('idle')
   const [showToast, setShowToast] = useState(false)
@@ -186,6 +186,7 @@ export default function TestToolPage({ onStartGame }) {
 
   const hasError = status === 'error'
   const isSuccess = status === 'success'
+  const payloadValue = selectedTool === 'Tool 1' ? calibratedPayload : '0'
   // 这里的 connectionInfo 原封不动，保持了原有判断 real connect 的逻辑
   const connectionInfo = `${
     hardware.connection === 'connected'
@@ -297,6 +298,7 @@ export default function TestToolPage({ onStartGame }) {
       showHintModal={showHintModal}
       selectedOption={selectedOption}
       selectedTool={selectedTool}
+      payloadValue={payloadValue}
       onSelectTool={setSelectedTool}
       onSelectOption={setSelectedOption}
       onPrimaryAction={

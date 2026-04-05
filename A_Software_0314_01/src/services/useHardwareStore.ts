@@ -625,6 +625,11 @@ export function saveHardwarePath() {
   sendBridgeCommand('Z')
 }
 
+/** Assembly Enable: same bridge cmd as clearAssemblyPoints entry point for UI */
+export function sendAssemblyTeachEnable() {
+  sendBridgeCommand('TEACH_START')
+}
+
 /**
  * 用户�?? UI 上切换坐标系时调�??
  * frame: 'Base' �?? 'Target'

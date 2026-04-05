@@ -5,9 +5,10 @@ import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
 import { PixelProgressBar } from '../components/PixelProgressBar.jsx'
 import { InlineStep } from '../components/InlineStep.jsx'
+import { InstallToolGuideImages } from '../components/InstallToolGuideImages.jsx'
 import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
 
-const YOUTUBE_VIDEO_ID = 'jNQXAC9IVRw'
+const YOUTUBE_VIDEO_ID = 'q7YXq3LCzTM'
 
 const steps = [
   {
@@ -108,7 +109,9 @@ export default function InstallCalibrationPage({ onNext }) {
 
   const handleNextClick = () => {
     if (typeof onNext === 'function') {
-      onNext()
+      onNext({
+        calibratedPayload: '2kg',
+      })
     }
   }
 
@@ -130,76 +133,76 @@ export default function InstallCalibrationPage({ onNext }) {
 
         <StepBar steps={steps} />
 
-        <div className="grid lg:grid-cols-[4fr_3fr] gap-8 flex-1 min-h-0 max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid max-lg:grid-cols-1 max-lg:[grid-auto-rows:max-content] max-lg:flex-none gap-[1.333rem] lg:grid-cols-[4fr_3fr] lg:flex-1 lg:min-h-0">
           <PixelCard
             padding="p-6"
-            className="min-h-0 max-h-full flex flex-col overflow-hidden"
+            className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
           >
             <div
               ref={leftScrollRef}
-              className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-8"
+              className="flex min-h-0 flex-1 flex-col gap-[1.333rem] overflow-y-auto max-lg:min-h-min max-lg:flex-none max-lg:overflow-visible"
             >
               {/* Step 1 */}
               <div className="flex gap-4">
-                <div className="flex-1 flex flex-col gap-4">
+                <div className="flex-1 flex flex-col gap-[0.667rem]">
                   <InlineStep index="1" label="Install the tool" />
-                  <div className="grid grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={index}
-                        className="flex items-center justify-center"
-                        style={{
-                          border: '3px solid var(--ink)',
-                          boxShadow: '6px 6px 0 var(--shadow)',
-                          background: 'var(--panel)',
-                          minHeight: '72px',
-                        }}
-                      />
-                    ))}
+                  <div className="pl-10">
+                    <InstallToolGuideImages />
                   </div>
                 </div>
               </div>
 
               {/* Step 2 */}
               <div className="flex gap-4">
-                <div className="flex-1 flex flex-col gap-4">
-                  <InlineStep index="2" label="Tool installed! Next mission: Calibration" />
-                  <div
-                    className="text-sm"
-                    style={{ color: 'var(--muted)' }}
-                  >
-                    Calibrate the tool to unlock its TCP and payload data. Watch
-                    the video to learn the correct way to complete this step.
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
+                <div className="flex-1 flex flex-col gap-[0.667rem]">
+                  <InlineStep index="2" label="Tool installed! Next mission: calibration" />
+                  <div className="flex flex-col gap-[0.667rem] pl-10">
                     <div
-                      className="pixel-card overflow-hidden min-h-[200px]"
-                      style={{ background: 'var(--panel)' }}
+                      className="text-sm"
+                      style={{ color: 'var(--muted)' }}
                     >
-                      <div ref={videoContainerRef} className="w-full h-full min-h-[200px]" />
+                      Calibrate the tool to unlock its TCP and payload data. Watch
+                      the video on the right to learn the correct way to complete
+                      this step.
                     </div>
 
-                    <div className="flex flex-col gap-3">
-                      <div className="px text-[10px]" style={{ color: 'var(--magenta)' }}>
-                        TCP (Tool Center Point)
+                    <div className="flex w-full max-w-full flex-col gap-[0.667rem]">
+                      <div className="flex flex-col gap-[calc(0.5rem*2/3)]">
+                        <div
+                          className="text-[12px] font-bold"
+                          style={{
+                            color: 'var(--magenta)',
+                            fontFamily:
+                              'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                          }}
+                        >
+                          TCP (Tool Center Point)
+                        </div>
+                        <div className="text-sm" style={{ color: 'var(--muted)' }}>
+                          The tool&apos;s working point — where the robot&apos;s
+                          &quot;hand&quot; touches and interacts with objects.
+                        </div>
                       </div>
-                      <div className="text-sm" style={{ color: 'var(--muted)' }}>
-                        The tool&apos;s working point — where the robot&apos;s
-                        &quot;hand&quot; touches and interacts with objects.
-                      </div>
-                      <div className="px text-[10px]" style={{ color: 'var(--magenta)' }}>
-                        Payload
-                      </div>
-                      <div className="text-sm" style={{ color: 'var(--muted)' }}>
-                        How heavy the tool is, and where its weight is balanced.
+                      <div className="flex flex-col gap-[calc(0.5rem*2/3)]">
+                        <div
+                          className="text-[12px] font-bold"
+                          style={{
+                            color: 'var(--magenta)',
+                            fontFamily:
+                              'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                          }}
+                        >
+                          Payload
+                        </div>
+                        <div className="text-sm" style={{ color: 'var(--muted)' }}>
+                          How heavy the tool is, and where its weight is balanced.
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4">
-                    <PixelProgressBar value={videoProgress} />
+                    <div className="mt-0">
+                      <PixelProgressBar value={videoProgress} />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -207,15 +210,15 @@ export default function InstallCalibrationPage({ onNext }) {
               {videoCompleted && (
                 <>
                   <div className="flex gap-4">
-                    <div className="flex-1 flex flex-col gap-4">
+                    <div className="flex-1 flex flex-col gap-[0.667rem]">
                       <InlineStep index="3" label="Calibration results" />
 
-                      <div className="flex flex-col gap-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <div className="px text-[10px] mb-1">Name</div>
+                      <div className="flex flex-col gap-[0.667rem] pl-10">
+                        <div className="grid grid-cols-2 gap-[0.667rem]">
+                          <div className="flex items-center gap-2">
+                            <div className="px shrink-0 text-[8px] leading-tight">Name</div>
                             <div
-                              className="px text-[11px]"
+                              className="text-[11px] flex-1 min-w-0"
                               style={{
                                 border: '2px solid var(--ink)',
                                 background: 'var(--panel)',
@@ -225,10 +228,10 @@ export default function InstallCalibrationPage({ onNext }) {
                               Tool A
                             </div>
                           </div>
-                          <div>
-                            <div className="px text-[10px] mb-1">Payload</div>
+                          <div className="flex items-center gap-2">
+                            <div className="px shrink-0 text-[8px] leading-tight">Payload</div>
                             <div
-                              className="px text-[11px]"
+                              className="text-[11px] flex-1 min-w-0"
                               style={{
                                 border: '2px solid var(--ink)',
                                 background: 'var(--panel)',
@@ -240,14 +243,14 @@ export default function InstallCalibrationPage({ onNext }) {
                           </div>
                         </div>
 
-                        <div>
-                          <div className="px text-[10px] mb-2">TCP</div>
-                          <div className="grid grid-cols-4 gap-2">
+                        <div className="flex items-center gap-3">
+                          <div className="px shrink-0 text-[8px] leading-tight">TCP</div>
+                          <div className="grid grid-cols-4 gap-2 flex-1 min-w-0">
                             {['X', 'Y', 'Z', 'Rx'].map((axis) => (
                               <div key={axis} className="flex items-center gap-2 min-w-0">
-                                <div className="px text-[12px]">{axis}</div>
+                                <div className="text-[12px]">{axis}</div>
                                 <div
-                                  className="px text-[11px] text-center flex-1 min-w-0"
+                                  className="text-[11px] text-center flex-1 min-w-0"
                                   style={{
                                     border: '2px solid var(--ink)',
                                     background: 'var(--panel)',
@@ -268,7 +271,7 @@ export default function InstallCalibrationPage({ onNext }) {
             </div>
 
             {videoCompleted && (
-              <div className="shrink-0 mt-6 w-full">
+              <div className="shrink-0 mt-4 w-full">
                 <PixelButton
                   variant="magenta"
                   className="w-full py-4 text-[12px]"
@@ -281,65 +284,22 @@ export default function InstallCalibrationPage({ onNext }) {
           </PixelCard>
 
           <PixelCard
-            title="3D ROBOT MODEL"
+            title="Tool Calibration Procedure"
             titleColor="var(--orange)"
-            className="min-h-0 max-h-full flex flex-col overflow-hidden"
+            className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
           >
             <div
-              className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center"
+              className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:flex-none"
               style={{
                 border: '3px dashed var(--ink)',
                 background: 'var(--panel)',
               }}
             >
-              <div className="relative w-full h-full flex items-center justify-center py-16">
-                <div className="text-center">
-                  <div className="px text-[16px] mb-2">
-                    Lion Model
-                  </div>
-                  <div className="px text-[12px]" style={{ color: 'var(--muted)' }}>
-                    Install the first building block
-                  </div>
-                </div>
-
-                <div className="absolute bottom-10 left-10 flex flex-col items-center gap-1">
-                  <div className="px text-[10px]">Base</div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    Z ↑
-                  </div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    X →
-                  </div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    Y •
-                  </div>
-                </div>
-
-                <div className="absolute bottom-10 right-10 flex flex-col items-center gap-1">
-                  <div className="px text-[10px]">TCP</div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    Z ↑
-                  </div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    X →
-                  </div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    Y •
-                  </div>
-                </div>
-
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1">
-                  <div className="px text-[10px]">Flange</div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    Z ↑
-                  </div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    X →
-                  </div>
-                  <div className="px text-[9px]" style={{ color: 'var(--muted)' }}>
-                    Y •
-                  </div>
-                </div>
+              <div className="relative min-h-[240px] w-full flex-1 overflow-hidden bg-black max-lg:min-h-[min(52vh,340px)] max-lg:flex-none">
+                <div
+                  ref={videoContainerRef}
+                  className="absolute inset-0 h-full w-full min-h-[200px]"
+                />
               </div>
             </div>
           </PixelCard>

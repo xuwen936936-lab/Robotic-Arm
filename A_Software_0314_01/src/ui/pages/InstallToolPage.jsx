@@ -4,6 +4,8 @@ import { PixelCard } from '../components/PixelCard.jsx'
 import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
 import { InlineStep } from '../components/InlineStep.jsx'
+import { InstallToolGuideImages } from '../components/InstallToolGuideImages.jsx'
+import { mediaAssets } from '../mediaAssets.js'
 import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
 
 const steps = [
@@ -60,7 +62,7 @@ export default function InstallToolPage({ onInstalled }) {
 
   return (
     <PageLayout>
-      <div className="flex items-center justify-between shrink-0 mb-10">
+      <div className="mb-10 flex shrink-0 items-center justify-between">
           <div className="px text-[24px]" style={{ color: 'var(--panel)' }}>
             Lion Model Assembly Game
           </div>
@@ -76,36 +78,16 @@ export default function InstallToolPage({ onInstalled }) {
 
         <StepBar steps={steps} />
 
-        <div className="grid lg:grid-cols-[4fr_3fr] gap-8 flex-1 min-h-0 max-lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid max-lg:grid-cols-1 max-lg:[grid-auto-rows:max-content] max-lg:flex-none gap-8 lg:grid-cols-[4fr_3fr] lg:flex-1 lg:min-h-0">
           <PixelCard
             padding="p-6"
-            className="min-h-0 max-h-full flex flex-col overflow-hidden"
+            className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
           >
-            <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-8">
+            <div className="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto max-lg:min-h-min max-lg:flex-none max-lg:overflow-visible">
               <div className="flex gap-4 items-start">
                 <div className="flex-1 flex flex-col gap-4">
                   <InlineStep index="1" label="Install the tool" />
-                  <div className="grid grid-cols-4 gap-4">
-                    {Array.from({ length: 4 }).map((_, index) => (
-                      <div
-                        // eslint-disable-next-line react/no-array-index-key
-                        key={index}
-                        className="flex items-center justify-center overflow-hidden"
-                        style={{
-                          border: '3px solid var(--ink)',
-                          boxShadow: '6px 6px 0 var(--shadow)',
-                          background: 'var(--panel)',
-                          minHeight: '72px',
-                        }}
-                      >
-                        <img
-                          src="/placeholders/illustration.svg"
-                          alt=""
-                          className="w-full h-full object-cover min-h-[72px]"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <InstallToolGuideImages />
                 </div>
               </div>
 
@@ -124,20 +106,20 @@ export default function InstallToolPage({ onInstalled }) {
           <PixelCard
             title="3D ROBOT MODEL"
             titleColor="var(--orange)"
-            className="min-h-0 max-h-full flex flex-col overflow-hidden"
+            className="flex min-h-0 max-h-full flex-col overflow-hidden max-lg:max-h-none"
           >
-            <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center min-h-[240px]">
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden max-lg:flex-none">
               <div
-                className="relative flex items-center justify-center w-full h-full"
+                className="relative min-h-[240px] w-full flex-1 overflow-hidden max-lg:min-h-[min(52vh,340px)] max-lg:flex-none"
                 style={{
                   border: '3px dashed var(--ink)',
                   background: 'var(--panel)',
                 }}
               >
                 <img
-                  src="/placeholders/3d-model.svg"
-                  alt=""
-                  className="w-full h-full object-contain"
+                  src={mediaAssets.robot3dPreview}
+                  alt="Robot arm hardware preview"
+                  className="absolute inset-0 h-full w-full object-cover object-center"
                 />
               </div>
             </div>

@@ -13,6 +13,9 @@
 
   --shadow:#000000;
   --muted: rgba(17,17,17,.65);
+
+  /* Page toasts (PixelToast): below title row, ~same band as StepBar */
+  --pixel-toast-top: 7rem;
 }
 
 body{
