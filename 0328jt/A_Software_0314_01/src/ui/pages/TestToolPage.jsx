@@ -84,7 +84,7 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
     setShowToast(false)
     setShowHintModal(false)
     waitingHardwareResultRef.current = false
-    startFixedMoveTest(RUN_DURATION_MS)
+    startFixedMoveTest(RUN_DURATION_MS, selectedToolRef.current === 'Tool A')
 
     if (resultTimerRef.current !== null) {
       window.clearTimeout(resultTimerRef.current)
