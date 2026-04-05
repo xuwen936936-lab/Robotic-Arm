@@ -176,6 +176,7 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
   const [status, setStatus] = useState('idle')
   const [showToast, setShowToast] = useState(false)
   const [showHintModal, setShowHintModal] = useState(false)
+  const [showHintWrongToast, setShowHintWrongToast] = useState(false)
   const [selectedOption, setSelectedOption] = useState(null)
   const [selectedTool, setSelectedTool] = useState('Flange')
   const resultTimerRef = useRef(null)
@@ -199,6 +200,14 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
   useEffect(() => {
     selectedToolRef.current = selectedTool
   }, [selectedTool])
+
+  useEffect(() => {
+    if (!showHintWrongToast) return undefined
+    const toastTimerId = window.setTimeout(() => {
+      setShowHintWrongToast(false)
+    }, 3000)
+    return () => window.clearTimeout(toastTimerId)
+  }, [showHintWrongToast])
 
   useEffect(() => {
     const cleanupHardware = initializeHardwareStore()
@@ -296,6 +305,7 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
       isSuccess={isSuccess}
       showToast={showToast}
       showHintModal={showHintModal}
+      showHintWrongToast={showHintWrongToast}
       selectedOption={selectedOption}
       selectedTool={selectedTool}
       payloadValue={payloadValue}
@@ -307,7 +317,10 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
       onOpenHintModal={() => setShowHintModal(true)}
       onCloseHintModal={() => setShowHintModal(false)}
       onConfirmHintModal={() => {
-        if (selectedOption !== 'C') return
+        if (selectedOption !== 'C') {
+          setShowHintWrongToast(true)
+          return
+        }
         setShowHintModal(false)
         setSelectedOption(null)
       }}

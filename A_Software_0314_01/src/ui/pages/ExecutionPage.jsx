@@ -6,6 +6,8 @@ import { StepBar } from '../components/StepBar.jsx'
 import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
 import { mediaAssets } from '../mediaAssets.js'
 import { CelebrationImage } from '../components/CelebrationImage.jsx'
+import { ResetArmButton } from '../components/ResetArmButton.jsx'
+import { ConnectionStatusLabel } from '../components/ConnectionStatusLabel.jsx'
 import './ExecutionPage.css'
 
 const steps = [
@@ -101,6 +103,16 @@ export default function ExecutionPage({ onRestartGame }) {
   if (phase === 'success') {
     return (
       <PageLayout>
+        <div className="mb-10 flex shrink-0 items-center justify-between">
+          <div className="assembly-page-title px text-[24px]">Lion Model Assembly Game</div>
+          <div className="flex items-center gap-3">
+            <ConnectionStatusLabel text={connectionInfo} />
+            <ResetArmButton />
+            <div className="swatch" style={{ background: 'var(--bgPurple)' }} />
+            <div className="swatch" style={{ background: 'var(--orange)' }} />
+            <div className="swatch" style={{ background: 'var(--magenta)' }} />
+          </div>
+        </div>
         <div className="execution-success-screen">
           <div className="execution-success-card">
             <div className="execution-success-panel">
@@ -135,9 +147,8 @@ export default function ExecutionPage({ onRestartGame }) {
       <div className="flex items-center justify-between shrink-0 mb-10">
         <div className="assembly-page-title px text-[24px]">Lion Model Assembly Game</div>
         <div className="flex items-center gap-3">
-          <div className="connection-pill px text-[9px] px-2 py-2">
-            {connectionInfo}
-          </div>
+          <ConnectionStatusLabel text={connectionInfo} />
+          <ResetArmButton />
           <div className="swatch" style={{ background: 'var(--bgPurple)' }} />
           <div className="swatch" style={{ background: 'var(--orange)' }} />
           <div className="swatch" style={{ background: 'var(--magenta)' }} />

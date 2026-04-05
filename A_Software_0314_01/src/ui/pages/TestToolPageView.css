@@ -14,11 +14,30 @@
 }
 
 .testtool-hint-modal {
+  position: relative;
   background: var(--panel);
   max-width: 1120px;
   width: calc(100% - 64px);
   max-height: 82vh;
   overflow-y: auto;
+}
+
+/* 错题提示：浮在弹窗内容之上，不占文档流；宽度随文案 */
+.testtool-hint-wrong-toast {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  white-space: nowrap;
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
+  background: #ffd5d5;
+  color: #ff3b3b;
+  padding: 8px 14px;
+  pointer-events: none;
 }
 
 .testtool-hint-alert {

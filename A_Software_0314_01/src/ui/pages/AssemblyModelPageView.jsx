@@ -8,6 +8,8 @@ import { StepBar } from '../components/StepBar.jsx'
 import { PixelSelect } from '../components/PixelSelect.jsx'
 import { TrajectoryPointCard } from '../components/TrajectoryPointCard.jsx'
 import { CelebrationImage } from '../components/CelebrationImage.jsx'
+import { ResetArmButton } from '../components/ResetArmButton.jsx'
+import { ConnectionStatusLabel } from '../components/ConnectionStatusLabel.jsx'
 import '../components/TrajectoryPointCard.css'
 import './AssemblyModelPageView.css'
 
@@ -52,9 +54,6 @@ function CollisionHintModal({
   const isDirectionStepOne = hintType === 'direction' && hintStep === 1
   const isDirectionStepTwo = hintType === 'direction' && hintStep === 2
   const isSingularityHint = hintType === 'singularity'
-  const expectedAnswer = isSingularityHint ? 'C' : isDirectionStepTwo ? 'A' : 'B'
-  const canConfirm = selectedOption === expectedAnswer
-  const shouldDisableConfirm = hintType === 'waypoint' ? false : !canConfirm
   const primaryLabel = isDirectionStepOne ? 'NEXT' : 'Confirm'
   const visual =
     hintType === 'waypoint'
@@ -145,8 +144,11 @@ function CollisionHintModal({
     <div className="assembly-hint-overlay fixed inset-0 z-50 flex items-center justify-center">
       <div className="assembly-hint-modal pixel-card soft-grid p-10">
         {showWrongAnswerToast && (
-          <div className="assembly-wrong-answer-toast px text-[12px]">
-            ⚠ Wrong answer
+          <div
+            className="assembly-wrong-answer-toast px text-[12px]"
+            role="status"
+          >
+            Wrong answer
           </div>
         )}
         <div className="mb-8">
@@ -224,10 +226,7 @@ function CollisionHintModal({
           )}
           <PixelButton
             variant="magenta"
-            className={`flex-1 py-4 text-[12px] ${
-              shouldDisableConfirm ? 'opacity-40 pointer-events-none' : ''
-            }`}
-            disabled={shouldDisableConfirm}
+            className="flex-1 py-4 text-[12px]"
             onClick={onConfirm}
           >
             {primaryLabel}
@@ -301,6 +300,8 @@ export function AssemblyModelPageView({
           Lion Model Assembly Game
         </div>
         <div className="flex items-center gap-3">
+          <ConnectionStatusLabel text={connectionInfo} />
+          <ResetArmButton />
           <button
             type="button"
             className="connection-pill px text-[9px] px-2 py-2 cursor-pointer select-none hover:brightness-[0.97] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[2px_2px_0_var(--shadow)]"
@@ -308,9 +309,6 @@ export function AssemblyModelPageView({
           >
             Enable
           </button>
-          <div className="connection-pill px text-[9px] px-2 py-2">
-            {connectionInfo}
-          </div>
           <div className="swatch" style={{ background: 'var(--bgPurple)' }} />
           <div className="swatch" style={{ background: 'var(--orange)' }} />
           <div className="swatch" style={{ background: 'var(--magenta)' }} />

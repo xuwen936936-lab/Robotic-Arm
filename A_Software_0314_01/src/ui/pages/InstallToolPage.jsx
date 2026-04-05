@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react'
 import { PageLayout } from '../components/PageLayout.jsx'
+import { ResetArmButton } from '../components/ResetArmButton.jsx'
+import { ConnectionStatusLabel } from '../components/ConnectionStatusLabel.jsx'
 import { PixelCard } from '../components/PixelCard.jsx'
 import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
@@ -67,9 +69,8 @@ export default function InstallToolPage({ onInstalled }) {
             Lion Model Assembly Game
           </div>
           <div className="flex items-center gap-3">
-            <div className="connection-pill px text-[9px] px-2 py-2">
-              {connectionInfo}
-            </div>
+            <ConnectionStatusLabel text={connectionInfo} />
+            <ResetArmButton />
             <div className="swatch" style={{ background: 'var(--bgPurple)' }} />
             <div className="swatch" style={{ background: 'var(--orange)' }} />
             <div className="swatch" style={{ background: 'var(--magenta)' }} />

@@ -8,6 +8,8 @@ import { PixelInput } from '../components/PixelInput.jsx'
 import { PixelToast } from '../components/PixelToast.jsx'
 import { PixelRadio } from '../components/PixelRadio.jsx'
 import { mediaAssets } from '../mediaAssets.js'
+import { ResetArmButton } from '../components/ResetArmButton.jsx'
+import { ConnectionStatusLabel } from '../components/ConnectionStatusLabel.jsx'
 import './TestToolPageView.css'
 
 const steps = [
@@ -36,7 +38,7 @@ function HintModal({
   onSelectOption,
   onClose,
   onConfirm,
-  canConfirm,
+  showWrongAnswerToast,
 }) {
   return (
     <div
@@ -45,6 +47,14 @@ function HintModal({
       <div
         className="testtool-hint-modal pixel-card soft-grid p-10"
       >
+        {showWrongAnswerToast ? (
+          <div
+            className="testtool-hint-wrong-toast px text-[12px]"
+            role="status"
+          >
+            Wrong answer
+          </div>
+        ) : null}
         <div className="mb-8">
           <div
             className="testtool-hint-alert px text-[18px] mb-6 flex items-center"
@@ -126,10 +136,7 @@ function HintModal({
           </PixelButton>
           <PixelButton
             variant="magenta"
-            className={`flex-1 py-4 text-[12px] ${
-              !canConfirm ? 'opacity-40 pointer-events-none' : ''
-            }`}
-            disabled={!canConfirm}
+            className="flex-1 py-4 text-[12px]"
             onClick={onConfirm}
           >
             Confirm
@@ -147,6 +154,7 @@ export function TestToolPageView({
   hasError,
   isSuccess,
   showToast,
+  showHintWrongToast,
   showHintModal,
   selectedOption,
   selectedTool,
@@ -167,9 +175,8 @@ export function TestToolPageView({
           Lion Model Assembly Game
         </div>
         <div className="flex items-center gap-3">
-          <div className="connection-pill px text-[9px] px-2 py-2">
-            {connectionInfo}
-          </div>
+          <ConnectionStatusLabel text={connectionInfo} />
+          <ResetArmButton />
           <div className="swatch testtool-swatch-purple" />
           <div className="swatch testtool-swatch-orange" />
           <div className="swatch testtool-swatch-magenta" />
@@ -305,7 +312,7 @@ export function TestToolPageView({
           onSelectOption={onSelectOption}
           onClose={onCloseHintModal}
           onConfirm={onConfirmHintModal}
-          canConfirm={selectedOption === 'C'}
+          showWrongAnswerToast={showHintWrongToast}
         />
       )}
     </PageLayout>

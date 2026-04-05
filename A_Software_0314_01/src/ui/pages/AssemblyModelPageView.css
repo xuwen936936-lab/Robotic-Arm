@@ -189,12 +189,16 @@
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 20;
+  z-index: 30;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  white-space: nowrap;
   border: 2px solid var(--ink);
   box-shadow: 4px 4px 0 var(--shadow);
   background: #ffd5d5;
   color: #ff3b3b;
   padding: 8px 14px;
+  pointer-events: none;
 }
 
 .assembly-hint-alert {
