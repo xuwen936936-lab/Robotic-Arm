@@ -1,0 +1,894 @@
+import React, { useEffect, useRef, useState } from 'react'
+import {
+  HARDWARE_SIGNALS,
+  captureCurrentPoint,
+  initializeHardwareStore, 
+  //0319
+  startAssemblyTeachMode, 
+  resetMockRobotToHome,
+  sendMockJogMove,
+  subscribeHardwareSignal,
+  startMockRun,
+  useHardwareStore,
+  saveHardwarePath, //0331
+  clearAssemblyPoints, //0401
+} from '../../services/useHardwareStore.ts'
+import { AssemblyModelPageView } from './AssemblyModelPageView.jsx'
+
+//const EMPTY_POINT = { x: '', y: '', z: '', rx: '' }
+//0330
+const EMPTY_POINT = { x: '', y: '', z: '', rx: '', isManual: false }
+const ASSEMBLY_RUN_MS = 5000
+const COLLISION_SIGNAL_MS = 2200
+const SINGULARITY_SIGNAL_MS = 2500
+const MAX_WAYPOINTS = 2
+const REFERENCE_FRAME_OPTIONS = [
+  { value: 'Base', label: 'Base' },
+  { value: 'Flange', label: 'Flange' },
+  { value: 'Tool A', label: 'Tool A' },
+  { value: 'Start', label: 'Start' },
+  { value: 'Target', label: 'Target' },
+]
+const JOG_FRAME_OPTIONS = [
+  { value: 'Base', label: 'Base' },
+  { value: 'Tool', label: 'Tool' },
+]
+
+// function isPointFilled(point) {
+//   return point.x && point.y && point.z && point.rx
+// }
+
+//0330
+function isPointFilled(point) {
+  // ֻҪ���ĸ�������ֵ����Ϊ������
+  return point.x !== '' && point.y !== '' && point.z !== '' && point.rx !== ''
+}
+
+export default function AssemblyModelPage({ onGoExecution }) {
+  const hardware = useHardwareStore()
+  const [mode, setMode] = useState('pick')
+  const [grab, setGrab] = useState(EMPTY_POINT)
+  const [grabFrame, setGrabFrame] = useState('Base')
+  const [drop, setDrop] = useState(EMPTY_POINT)
+  const [dropFrame, setDropFrame] = useState('Base')
+  const [waypoints, setWaypoints] = useState([])
+  const [nextId, setNextId] = useState(1)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [isRunningPreview, setIsRunningPreview] = useState(false)
+  const [showCollisionToast, setShowCollisionToast] = useState(false)
+  const [showWrongAnswerToast, setShowWrongAnswerToast] = useState(false)
+  const [hasCollision, setHasCollision] = useState(false)
+  const [showCollisionHintModal, setShowCollisionHintModal] = useState(false)
+  const [selectedCollisionOption, setSelectedCollisionOption] = useState(null)
+  const [collisionHintType, setCollisionHintType] = useState('waypoint')
+  const [collisionHintStep, setCollisionHintStep] = useState(1)
+  const [showRelativeHintInfo, setShowRelativeHintInfo] = useState(false)
+  const [hasTriggeredDirectionCollision, setHasTriggeredDirectionCollision] = useState(false)
+  const [hasTriggeredSingularityCollision, setHasTriggeredSingularityCollision] =
+    useState(false)
+  const [hasSingularityWarning, setHasSingularityWarning] = useState(false)
+  const [isAutomaticReassemblyReady, setIsAutomaticReassemblyReady] = useState(false)
+  const [stage, setStage] = useState('first-block') // first-block | second-block | third-block
+  const [jogFrame, setJogFrame] = useState('Base')
+  const runCompleteTimerRef = useRef(null)
+  const collisionSignalTimerRef = useRef(null)
+  const waitingP2HardwareSignalRef = useRef(false)
+  const waitingDirectionHardwareSignalRef = useRef(false)
+  const waitingSingularityHardwareSignalRef = useRef(false)
+  const stageRef = useRef(stage)
+  const waypointCountRef = useRef(waypoints.length)
+
+  const canConfirm = isPointFilled(grab) && isPointFilled(drop)
+  const requiresRecordedPoints = stage !== 'first-block'
+  const canConfirmNow = requiresRecordedPoints ? canConfirm : true
+  const connectionInfo = `${
+    hardware.connection === 'connected'
+      ? 'Connected'
+      : hardware.connection === 'error'
+        ? 'Error'
+        : 'Disconnected'
+  } · ${hardware.source === 'hardware' ? 'Real' : 'Virtual'}`
+
+  useEffect(() => {
+    stageRef.current = stage
+  }, [stage])
+
+  useEffect(() => {
+    waypointCountRef.current = waypoints.length
+  }, [waypoints.length])
+
+  useEffect(() => {
+    const cleanupHardware = initializeHardwareStore()
+    const unsubscribeSignal = subscribeHardwareSignal((rawSignal) => {
+
+      let signal = rawSignal;
+      // === 新增：监听真实物理急停按钮，将它变成我们需要的教学信号 ===
+      if (signal === 'RAW_ESTOP_TRIGGERED') {
+        if (stageRef.current === 'second-block') {
+          if (waypointCountRef.current < 1) {
+            // 没途经点被急停 -> 转化为【未添加途经点】报错信�?
+            signal = HARDWARE_SIGNALS.ASSEMBLY_REACHED_SPECIFIED_POINT;
+          } else {
+            // 有途经点被急停 -> 转化为【方向错误】报错信�?
+            signal = HARDWARE_SIGNALS.ASSEMBLY_ESTOP_BEFORE_TARGET;
+          }
+        }
+      }
+
+      // //0404 处理奇异点信号（仅限第三关）
+      // if (
+      //   waitingSingularityHardwareSignalRef.current &&
+      //   signal === HARDWARE_SIGNALS.ASSEMBLY_SINGULARITY_REACHED &&
+      //   stageRef.current === 'third-block' // <--- 关键：确保只在第三关触发 
+      // ) {
+      //   waitingSingularityHardwareSignalRef.current = false;
+      //   // 清理所有运行中的定时器
+      //   if (runCompleteTimerRef.current !== null) {
+      //     window.clearTimeout(runCompleteTimerRef.current);
+      //     runCompleteTimerRef.current = null;
+      //   }
+      //   setHasTriggeredSingularityCollision(true);
+      //   setHasSingularityWarning(true);
+      //   triggerCollision('singularity'); // 弹出奇异点报错弹�? [cite: 441]
+      // }
+
+      // 0404 处理奇异点信号（仅限第三关，全天候监听！�?
+      if (
+        signal === HARDWARE_SIGNALS.ASSEMBLY_SINGULARITY_REACHED &&
+        stageRef.current === 'third-block'
+      ) {
+        waitingSingularityHardwareSignalRef.current = false;
+        if (runCompleteTimerRef.current !== null) {
+          window.clearTimeout(runCompleteTimerRef.current);
+          runCompleteTimerRef.current = null;
+        }
+        if (collisionSignalTimerRef.current !== null) {
+          window.clearTimeout(collisionSignalTimerRef.current);
+          collisionSignalTimerRef.current = null;
+        }
+        setHasTriggeredSingularityCollision(true);
+        setHasSingularityWarning(true);
+        triggerCollision('singularity'); // 弹出奇异点报错弹�?
+        return; // 处理完直接返�?
+      }
+
+      if (
+        waitingP2HardwareSignalRef.current &&
+        signal === HARDWARE_SIGNALS.ASSEMBLY_REACHED_SPECIFIED_POINT &&
+        stageRef.current === 'second-block' &&
+        waypointCountRef.current < 1
+      ) {
+        waitingP2HardwareSignalRef.current = false
+        waitingDirectionHardwareSignalRef.current = false
+        if (runCompleteTimerRef.current !== null) {
+          window.clearTimeout(runCompleteTimerRef.current)
+          runCompleteTimerRef.current = null
+        }
+        if (collisionSignalTimerRef.current !== null) {
+          window.clearTimeout(collisionSignalTimerRef.current)
+          collisionSignalTimerRef.current = null
+        }
+        triggerCollision('waypoint')
+        return
+      }
+
+      if (
+        waitingDirectionHardwareSignalRef.current &&
+        signal === HARDWARE_SIGNALS.ASSEMBLY_ESTOP_BEFORE_TARGET &&
+        stageRef.current === 'second-block'
+      ) {
+        waitingDirectionHardwareSignalRef.current = false
+        waitingP2HardwareSignalRef.current = false
+        if (runCompleteTimerRef.current !== null) {
+          window.clearTimeout(runCompleteTimerRef.current)
+          runCompleteTimerRef.current = null
+        }
+        if (collisionSignalTimerRef.current !== null) {
+          window.clearTimeout(collisionSignalTimerRef.current)
+          collisionSignalTimerRef.current = null
+        }
+        setHasTriggeredDirectionCollision(true)
+        triggerCollision('direction')
+        return
+      }
+
+      // if (
+      //   waitingSingularityHardwareSignalRef.current &&
+      //   signal === HARDWARE_SIGNALS.ASSEMBLY_SINGULARITY_REACHED &&
+      //   stageRef.current === 'third-block'
+      // ) {
+      //   waitingSingularityHardwareSignalRef.current = false
+      //   waitingP2HardwareSignalRef.current = false
+      //   waitingDirectionHardwareSignalRef.current = false
+      //   if (runCompleteTimerRef.current !== null) {
+      //     window.clearTimeout(runCompleteTimerRef.current)
+      //     runCompleteTimerRef.current = null
+      //   }
+      //   if (collisionSignalTimerRef.current !== null) {
+      //     window.clearTimeout(collisionSignalTimerRef.current)
+      //     collisionSignalTimerRef.current = null
+      //   }
+      //   setHasTriggeredSingularityCollision(true)
+      //   setHasSingularityWarning(true)
+      //   triggerCollision('singularity')
+      // }
+    })
+
+    return () => {
+      cleanupHardware()
+      unsubscribeSignal()
+      waitingP2HardwareSignalRef.current = false
+      waitingDirectionHardwareSignalRef.current = false
+      waitingSingularityHardwareSignalRef.current = false
+      if (runCompleteTimerRef.current !== null) {
+        window.clearTimeout(runCompleteTimerRef.current)
+      }
+      if (collisionSignalTimerRef.current !== null) {
+        window.clearTimeout(collisionSignalTimerRef.current)
+      }
+      setIsRunningPreview(false)
+    }
+  }, [])
+  
+
+  // //0324  ������ҳ����һ�е�����ӳɹ��󣬵ȴ�??1s�ٷ���ָ��U
+  // useEffect(() => {
+  //   if (hardware.connection === 'connected' && hardware.source === 'hardware') {
+  //     console.log("Detected Real Robot connection. Initializing with delay...");
+      
+  //     // ����һ����ʱ��ȷ��������·��ȫ�ȹ�
+  //     const initTimer = setTimeout(() => {
+  //       import('../../services/useHardwareStore.ts').then(m => {
+  //         m.startAssemblyTeachMode();
+  //       });
+  //     }, 1000); // �������� 1 ��
+
+  //     return () => clearTimeout(initTimer);
+  //   }
+  // }, [hardware.connection, hardware.source]);
+
+  // 0328 页面初始化：延迟 2 秒后进入纯净的示教模�?? (�?? U，不�?? K)
+  // useEffect(() => {
+    // 只有在真正连接上物理设备时才触发
+  //   if (hardware.connection === 'connected' && hardware.source === 'hardware') {
+  //     const timer = setTimeout(() => {
+  //       console.log("[Assembly] 2s delayed: Entering teach mode (U)...");
+  //       // 动态引入并调用刚在 store 里新写的 enterTeachMode
+  //       import('../../services/useHardwareStore.ts').then(m => {
+  //         if (m.startAssemblyTeachMode) m.startAssemblyTeachMode();
+  //       });
+  //     }, 2000); 
+
+  //     return () => clearTimeout(timer);
+  //   }
+  // }, [hardware.connection, hardware.source]);
+
+  //0401 进一步强化：在进入示教模式前，先�? C 命令彻底清空主板里之前的点位记忆，确保每次进入都是干净的状�?
+  useEffect(() => {
+    if (hardware.connection === 'connected' && hardware.source === 'hardware') {
+      const timer = setTimeout(() => {
+        console.log("[Assembly] 2s delayed: Entering teach mode (U)...");
+        import('../../services/useHardwareStore.ts').then(m => {
+          if (m.clearAssemblyPoints) m.clearAssemblyPoints(); // <--- 新增：洗掉上个页面的记忆
+          if (m.startAssemblyTeachMode) m.startAssemblyTeachMode();
+        });
+      }, 2000); 
+      return () => clearTimeout(timer);
+    }
+  }, [hardware.connection, hardware.source]);
+
+  useEffect(() => {
+    if (!showCollisionToast) return undefined
+    const toastTimerId = window.setTimeout(() => {
+      setShowCollisionToast(false)
+    }, 3500)
+    return () => window.clearTimeout(toastTimerId)
+  }, [showCollisionToast])
+
+  useEffect(() => {
+    if (!showWrongAnswerToast) return undefined
+    const toastTimerId = window.setTimeout(() => {
+      setShowWrongAnswerToast(false)
+    }, 2000)
+    return () => window.clearTimeout(toastTimerId)
+  }, [showWrongAnswerToast])
+
+  //0330 ����������Ӽ���������?
+  // useEffect(() => {
+  //   // ����λ�Ƿ����������͵��ڲ�����
+  //   const checkAndSend = (point, type, frame) => {
+  //     if (isPointFilled(point)) {
+  //       hardware.sendManualPoint(type, point, frame);
+  //     }
+  //   };
+
+  //   // �����������û�ֹͣ���� 500ms ���ٷ���
+  //   const timer = setTimeout(() => {
+  //     // ���? Pick ��
+  //     checkAndSend(grab, 'pick', grabFrame);
+      
+  //     // ���? Drop ��
+  //     checkAndSend(drop, 'drop', dropFrame);
+      
+  //     // ���? Waypoints
+  //     waypoints.forEach((wp, index) => {
+  //       const type = index === 0 ? 'w1' : 'w2';
+  //       checkAndSend(wp.point, type, wp.frame);
+  //     });
+  //   }, 500);
+
+  //   return () => clearTimeout(timer); // �����ʱ���������ظ�����?
+  // }, [grab, drop, waypoints, grabFrame, dropFrame]); // ������Щ�����ı仯
+
+  useEffect(() => {
+  const checkAndSend = (point, type, frame, isManual = false) => {
+    // ֻ�е���λ����������ȷ�����ֶ�������isManual Ϊ true��ʱ�ŷ���
+    if (isPointFilled(point) && isManual) {
+      hardware.sendManualPoint(type, point, frame);
+    }
+  };
+
+  const timer = setTimeout(() => {
+    // 1. ���? Pick �㣺������Ҫ�������? handlePointChange �����ñ��?
+    // ���߼��жϣ�������? grab ���ֶ������?
+    checkAndSend(grab, 'pick', grabFrame, grab.isManual);
+    
+    // 2. ���? Drop ��
+    checkAndSend(drop, 'drop', dropFrame, drop.isManual);
+    
+    // 3. ���? Waypoints��ֱ��ʹ�ô��������е� isManuallyEdited ����
+    waypoints.forEach((wp, index) => {
+      const type = index === 0 ? 'w1' : 'w2';
+      checkAndSend(wp.point, type, wp.frame, wp.isManuallyEdited);
+    });
+  }, 500);
+
+  return () => clearTimeout(timer);
+}, [grab, drop, waypoints, grabFrame, dropFrame]);
+
+
+  const triggerCollision = (type) => {
+    setIsRunningPreview(false)
+    setHasCollision(true)
+    setShowCollisionToast(true)
+    setShowWrongAnswerToast(false)
+    setCollisionHintType(type)
+    setCollisionHintStep(1)
+    setSelectedCollisionOption(null)
+  }
+
+  const handleAddWaypoint = () => {
+    if (waypoints.length >= MAX_WAYPOINTS) return
+    const currentPoint = captureCurrentPoint()
+    setWaypoints((prev) => [
+      ...prev,
+      {
+        id: nextId,
+        point: currentPoint,
+        frame: jogFrame,
+        isManuallyEdited: false,
+      },
+    ])
+    setNextId((id) => id + 1)
+  }
+
+  const handleRemoveWaypoint = (id) => {
+    setWaypoints((prev) => prev.filter((waypoint) => waypoint.id !== id))
+  }
+
+  const handlePointChange = (setter, axis, value) => {
+    setter((prev) => ({ ...prev, 
+      [axis]: value,
+      isManual: true //0330 �ص㣺�û��ֶ����֣�����? true
+     }))
+  }
+
+  const handleWaypointChange = (id, axis, value) => {
+    setWaypoints((prev) =>
+      prev.map((waypoint) =>
+        waypoint.id === id
+          ? {
+              ...waypoint,
+              isManuallyEdited: true,
+              point: {
+                ...waypoint.point,
+                [axis]: value,
+              },
+            }
+          : waypoint,
+      ),
+    )
+  }
+
+  // const handleRecordPoint = (setter) => {
+  //   setter(captureCurrentPoint())
+  // }
+
+  // //0324 �޸ĺ�
+  // const handleRecordPoint = (setter, type) => {
+  //   // ? ����ͨ�� hardware ʵ�����ã�����ȷ���ߵ��ǡ���ʵ���ӡ�����·
+  //   if (hardware.recordPointWithSignal) {
+  //     const point = hardware.recordPointWithSignal(type);
+  //     setter(point);
+  //   } else {
+  //     console.error("recordPointWithSignal is not exported from hardware store!");
+  //   }
+  // }
+
+  // AssemblyModelPage.jsx
+
+// const handleRecordPoint = (setter, type) => {
+
+//   // ���� store �е��첽����
+//   // setter �����յ�Ӳ���ش������ִ��??
+//   hardware.recordPointWithSignal(type, (newCoords) => {
+//     setter(newCoords); // �����ִ��?? setGrab(newCoords) �� setDrop(newCoords)
+//     // console.log(`[UI] ${type} point updated:`, newCoords);
+//   });
+
+//   // // 2. ����һ����ʱ������ר�ŵȴ���һ�ε��������??
+//   // const unsubscribe = subscribeHardwareSignal((payload) => {
+//   //   // ����Ƿ��յ����µ������
+//   //   if (typeof payload === 'object' && payload.x) {
+//   //     setter(payload); // ��Ӳ���ش����������������Ӧ��?? Pick/Drop ��Ƭ
+//   //     unsubscribe();   // �ɹ�������������ټ���������ֹ��������??
+//   //   }
+//   // });
+// };
+// 0328 处理 Pick Point (起点) �?? Drop Point (终点) �?? RECORD 按钮
+  const handleRecordPoint = async (setter, type) => {
+    // 判断当前点击的是起点还是终点，并获取对应的下拉框参考系
+    const frame = type === 'pick' ? grabFrame : dropFrame;
+    // 起点对应 'A' (在字典中�?? RECORD_START)，终点对�?? 'B' (RECORD_END)
+    const cmd = type === 'pick' ? 'RECORD_START' : 'RECORD_END'; 
+    
+    import('../../services/useHardwareStore.ts').then(async (m) => {
+      if (m.triggerAtomicRecord) {
+        // 1. 触发原子化操作（发指�?? -> �??1�?? -> �?? P/TP�??
+        await m.triggerAtomicRecord(cmd, frame);
+        
+        // 2. 等待串口回传坐标并被前端状态库解析 (400ms 的状态更新缓冲足够了)
+        setTimeout(() => {
+          const newCoords = m.captureCurrentPoint(); // 从状态机里抓取最新坐�??
+          setter({ ...newCoords, isManual: false }); //0330
+        }, 400);
+      }
+    });
+  };
+
+  // const handleRecordWaypoint = (id) => {
+  //   const currentPoint = captureCurrentPoint()
+  //   setWaypoints((prev) =>
+  //     prev.map((waypoint) =>
+  //       waypoint.id === id
+  //         ? {
+  //             ...waypoint,
+  //             point: currentPoint,
+  //             frame: jogFrame,
+  //             isManuallyEdited: false,
+  //           }
+  //         : waypoint,
+  //     ),
+  //   )
+  // }
+// 0328 处理 WayPoint (过渡�??) �?? RECORD 按钮
+  const handleRecordWaypoint = async (id) => {
+    // 1. 【关键修复】通过 id 找到它在数组中的实际位置(index)
+    const index = waypoints.findIndex(wp => wp.id === id);
+    if (index === -1) {
+        console.error("[UI] Waypoint ID not found:", id);
+        return;
+    }
+
+    // 2. 正常获取参考系和指�??
+    const frame = waypoints[index].frame || 'Base'; 
+    const cmd = index === 0 ? 'RECORD_W1' : 'RECORD_W2'; // 对应 Bridge 里的 W �?? X
+    
+    console.log(`[UI] Recording Waypoint ${index + 1} (ID:${id}) -> CMD: ${cmd}, Frame: ${frame}`);
+
+    import('../../services/useHardwareStore.ts').then(async (m) => {
+      if (m.triggerAtomicRecord) {
+        // 3. 触发原子化操�??
+        await m.triggerAtomicRecord(cmd, frame);
+        
+        // 4. 缓冲 400ms 后更�?? UI
+        setTimeout(() => {
+          const newCoords = m.captureCurrentPoint();
+          setWaypoints(prev => {
+            const newWp = [...prev];
+            // 找到对应的元素并更新坐标
+            const targetIdx = newWp.findIndex(wp => wp.id === id);
+            if (targetIdx !== -1) {
+              //newWp[targetIdx] = { ...newWp[targetIdx], point: newCoords };
+              //0330
+              newWp[targetIdx] = { 
+                ...newWp[targetIdx], 
+                point: { ...newCoords, isManual: false },
+                isManuallyEdited: false // �����Զ�����
+              };
+            }
+            return newWp;
+          });
+        }, 400);
+      }
+    });
+  };
+
+  const handleWaypointFrameChange = (id, frame) => {
+    setWaypoints((prev) =>
+      prev.map((waypoint) =>
+        waypoint.id === id
+          ? {
+              ...waypoint,
+              frame,
+              isManuallyEdited: true,
+            }
+          : waypoint,
+      ),
+    )
+  }
+
+  const handleConfirmTest = () => {
+    if (isRunningPreview || hardware.isRunning) return
+    if (!canConfirmNow) return
+    waitingP2HardwareSignalRef.current = false
+    waitingDirectionHardwareSignalRef.current = false
+    waitingSingularityHardwareSignalRef.current = false
+    if (hasSingularityWarning) {
+      void resetMockRobotToHome()
+      setHasSingularityWarning(false)
+      setHasCollision(false)
+      setShowCollisionToast(false)
+      setShowWrongAnswerToast(false)
+      setShowCollisionHintModal(false)
+      setSelectedCollisionOption(null)
+      setIsAutomaticReassemblyReady(true)
+      return
+    }
+
+    setShowSuccessModal(false)
+    setShowCollisionToast(false)
+    setShowWrongAnswerToast(false)
+    setShowCollisionHintModal(false)
+    setSelectedCollisionOption(null)
+    setIsRunningPreview(true)
+    //startMockRun(ASSEMBLY_RUN_MS)
+    // 0401 === 修改这里：如果是在第二关且没写途经点，就开启碰撞障碍物模式 (发�? O) ===
+    const isObstacleRun = stage === 'second-block' && waypoints.length < 1;
+    //startMockRun(ASSEMBLY_RUN_MS, isObstacleRun);
+    // 0404=== 核心修复：根据途径点数量动态计算机械臂的真实运行时�? ===
+    // 基础时间：去起点(2.5s) + 吸附(0.8s) + 去终�?(2.5s) + 释放(0.8s) �? 6600ms -> 取整�? 7000ms
+    // 每个途径点额外耗时 2500ms
+    const dynamicRunTimeMs = 7000 + (waypoints.length * 2500);
+    
+    startMockRun(dynamicRunTimeMs, isObstacleRun);
+
+    if (runCompleteTimerRef.current !== null) {
+      window.clearTimeout(runCompleteTimerRef.current)
+    }
+    if (collisionSignalTimerRef.current !== null) {
+      window.clearTimeout(collisionSignalTimerRef.current)
+    }
+
+    const shouldTriggerWaypointCollision = stage === 'second-block' && waypoints.length < 1
+    const isRealHardwarePath =
+      hardware.source === 'hardware' && hardware.connection === 'connected'
+    const shouldTriggerDirectionCollision = false
+    const shouldTriggerSingularityCollision = false
+
+    if (shouldTriggerWaypointCollision && isRealHardwarePath) {
+      // P2 rule: in real hardware path, wait for the dedicated hardware signal.
+      waitingP2HardwareSignalRef.current = true
+      return
+    }
+
+    if (stage === 'second-block') {
+      // Direction error is hardware-signal-driven in block 2.
+      // In mock mode, signal can be injected via window.__ROBOT_DEBUG__.emitSignal(...)
+      waitingDirectionHardwareSignalRef.current = true
+    }
+
+    if (stage === 'third-block' && !hasTriggeredSingularityCollision) {
+      // Singularity is hardware-signal-driven in block 3.
+      // In mock mode, signal can be injected via window.__ROBOT_DEBUG__.emitSignal(...)
+      waitingSingularityHardwareSignalRef.current = true
+    }
+
+    if (
+      shouldTriggerWaypointCollision ||
+      shouldTriggerDirectionCollision ||
+      shouldTriggerSingularityCollision
+    ) {
+      collisionSignalTimerRef.current = window.setTimeout(() => {
+        collisionSignalTimerRef.current = null
+        if (shouldTriggerSingularityCollision) {
+          setHasTriggeredSingularityCollision(true)
+          setHasSingularityWarning(true)
+          triggerCollision('singularity')
+          return
+        }
+        if (shouldTriggerDirectionCollision) {
+          setHasTriggeredDirectionCollision(true)
+          triggerCollision('direction')
+          return
+        }
+        triggerCollision('waypoint')
+      }, shouldTriggerSingularityCollision ? SINGULARITY_SIGNAL_MS : COLLISION_SIGNAL_MS)
+      return
+    }
+
+    runCompleteTimerRef.current = window.setTimeout(() => {
+      runCompleteTimerRef.current = null
+      waitingP2HardwareSignalRef.current = false
+      waitingDirectionHardwareSignalRef.current = false
+      waitingSingularityHardwareSignalRef.current = false
+      setIsRunningPreview(false)
+      setHasCollision(false)
+      setShowSuccessModal(true)
+    //}, ASSEMBLY_RUN_MS)
+    }, dynamicRunTimeMs)
+  }
+
+  const handleNextBlock = () => {
+    waitingP2HardwareSignalRef.current = false
+    waitingDirectionHardwareSignalRef.current = false
+    waitingSingularityHardwareSignalRef.current = false
+    setShowSuccessModal(false)
+
+    // 0331=== 新增 1：在进入下一阶段前，通知主板把刚才跑通的这组点位保存到硬件内存里 ===
+    saveHardwarePath()
+
+    if (stage === 'first-block') {
+      setStage('second-block')
+    } else if (stage === 'second-block') {
+      setStage('third-block')
+    }
+    setMode('pick')
+    setGrab(EMPTY_POINT)
+    setGrabFrame('Base')
+    setDrop(EMPTY_POINT)
+    setDropFrame('Base')
+    setWaypoints([])
+    setNextId(1)
+    setIsRunningPreview(false)
+    setHasCollision(false)
+    setShowCollisionToast(false)
+    setShowWrongAnswerToast(false)
+    setShowCollisionHintModal(false)
+    setSelectedCollisionOption(null)
+    setCollisionHintType('waypoint')
+    setCollisionHintStep(1)
+    setShowRelativeHintInfo(false)
+    if (stage === 'first-block') {
+      setHasTriggeredDirectionCollision(false)
+    }
+    if (stage === 'second-block') {
+      setHasTriggeredSingularityCollision(false)
+      setHasSingularityWarning(false)
+      setIsAutomaticReassemblyReady(false)
+    }
+
+    // 0401 === 新增 2：数据清空完毕后，让机械臂重新卸力，准备下一关示�? ===
+    clearAssemblyPoints()    // <--- 新增：通知硬件把上一关的点位忘掉
+    startAssemblyTeachMode()
+
+  }
+
+  const handleSuccessPrimaryAction = () => {
+    setShowSuccessModal(false)
+    if (stage === 'third-block' && isAutomaticReassemblyReady) {
+
+      // 0331=== 终极补充：去最终执行前，必须把第三个阶段的路径也保存进主板�? ===
+      saveHardwarePath()
+
+      if (typeof onGoExecution === 'function') {
+        onGoExecution()
+      }
+      return
+    }
+    // 如果�? first �? second block 通关，走这个正常的下一关逻辑
+    handleNextBlock()
+  }
+
+  const handleTryAgainCurrentBlock = () => {
+    waitingP2HardwareSignalRef.current = false
+    waitingDirectionHardwareSignalRef.current = false
+    waitingSingularityHardwareSignalRef.current = false
+    setShowSuccessModal(false)
+    setHasCollision(false)
+    setShowCollisionToast(false)
+    setShowWrongAnswerToast(false)
+    setShowCollisionHintModal(false)
+    setSelectedCollisionOption(null)
+    // 0331=== 新增：让机械臂重新卸力，允许用户基于现有坐标继续微调拖拽 ===
+    startAssemblyTeachMode()
+  }
+
+  const handleJogMove = async (axis, direction) => {
+    const distance = axis === 'rx' ? 5 : 10
+    await sendMockJogMove({
+      axis,
+      direction,
+      frame: jogFrame,
+      distance,
+    })
+  }
+
+  return (
+    <AssemblyModelPageView
+      stage={stage}
+      mode={mode}
+      grab={grab}
+      grabFrame={grabFrame}
+      drop={drop}
+      dropFrame={dropFrame}
+      waypoints={waypoints}
+      frameOptions={REFERENCE_FRAME_OPTIONS}
+      jogFrameOptions={JOG_FRAME_OPTIONS}
+      canConfirm={canConfirmNow}
+      isAssemblyRunning={isRunningPreview}
+      hasCollision={hasCollision}
+      showCollisionToast={showCollisionToast}
+      showWrongAnswerToast={showWrongAnswerToast}
+      showCollisionHintModal={showCollisionHintModal}
+      selectedCollisionOption={selectedCollisionOption}
+      collisionHintType={collisionHintType}
+      collisionHintStep={collisionHintStep}
+      showRelativeHintInfo={showRelativeHintInfo}
+      showSuccessModal={showSuccessModal}
+      successPrimaryLabel={
+        stage === 'third-block' && isAutomaticReassemblyReady
+          ? 'Automatic reassembly'
+          : 'Next block'
+      }
+      jogFrame={jogFrame}
+      hasSingularityWarning={hasSingularityWarning}
+      connectionInfo={connectionInfo}
+      //onToggleMode={() => setMode((prev) => (prev === 'pick' ? 'drop' : 'pick'))}
+      //0404
+      onToggleMode={() => {
+        setMode((prev) => {
+          const nextMode = prev === 'pick' ? 'drop' : 'pick'
+          
+          // === 新增：根据当前选中的是 Pick 还是 Drop，实时开关电磁铁 ===
+          import('../../services/useHardwareStore.ts').then(m => {
+            if (m.controlAssemblyMagnet) {
+              // 切换�? pick 时上电吸�?(true)，切换到 drop 时断电松开(false)
+              m.controlAssemblyMagnet(nextMode === 'drop')
+            }
+          })
+          
+          return nextMode
+        })
+      }}
+      onConfirmTest={handleConfirmTest}
+      onNextBlock={handleNextBlock}
+      onSuccessPrimaryAction={handleSuccessPrimaryAction}
+      onTryAgainCurrentBlock={handleTryAgainCurrentBlock}
+      onOpenCollisionHint={() => setShowCollisionHintModal(true)}
+      onCloseCollisionHint={() => {
+        setShowCollisionHintModal(false)
+        setSelectedCollisionOption(null)
+        if (collisionHintType === 'singularity') return
+        setShowRelativeHintInfo(true)
+      }}
+      onSelectCollisionOption={setSelectedCollisionOption}
+      // onConfirmCollisionHint={() => {
+      //   if (collisionHintType === 'singularity') {
+      //     if (selectedCollisionOption !== 'C') {
+      //       setShowWrongAnswerToast(true)
+      //       return
+      //     }
+      //     setShowCollisionHintModal(false)
+      //     setSelectedCollisionOption(null)
+      //     setHasCollision(false)
+      //     setShowWrongAnswerToast(false)
+      //     return
+      //   }
+      //   if (collisionHintType === 'direction' && collisionHintStep === 1) {
+      //     if (selectedCollisionOption !== 'B') {
+      //       setShowWrongAnswerToast(true)
+      //       return
+      //     }
+      //     setCollisionHintStep(2)
+      //     setSelectedCollisionOption(null)
+      //     setShowWrongAnswerToast(false)
+      //     return
+      //   }
+      //   if (collisionHintType === 'direction' && collisionHintStep === 2) {
+      //     if (selectedCollisionOption !== 'A') {
+      //       setShowWrongAnswerToast(true)
+      //       return
+      //     }
+      //     setShowCollisionHintModal(false)
+      //     setHasCollision(false)
+      //     setSelectedCollisionOption(null)
+      //     setShowRelativeHintInfo(true)
+      //     setShowWrongAnswerToast(false)
+      //     return
+      //   }
+      //   if (selectedCollisionOption !== 'B') {
+      //     setShowWrongAnswerToast(true)
+      //     return
+      //   }
+      //   setShowCollisionHintModal(false)
+      //   setHasCollision(false)
+      //   setSelectedCollisionOption(null)
+      //   setShowRelativeHintInfo(true)
+      //   setShowWrongAnswerToast(false)
+      // }}
+
+      //0404 进一步优化：在三个弹窗里答对后都让机械臂重新卸力，允许用户基于现有坐标继续微调拖拽，而不是被迫刷新页面回到初始状�?
+      onConfirmCollisionHint={() => {
+        if (collisionHintType === 'singularity') {
+          if (selectedCollisionOption !== 'C') {
+            setShowWrongAnswerToast(true)
+            return
+          }
+          setShowCollisionHintModal(false)
+          setSelectedCollisionOption(null)
+          setHasCollision(false)
+          setShowWrongAnswerToast(false)
+          // === 新增 1：奇异点弹窗答对后，让机械臂重新卸力 ===
+          startAssemblyTeachMode() 
+          return
+        }
+        if (collisionHintType === 'direction' && collisionHintStep === 1) {
+          if (selectedCollisionOption !== 'B') {
+            setShowWrongAnswerToast(true)
+            return
+          }
+          setCollisionHintStep(2)
+          setSelectedCollisionOption(null)
+          setShowWrongAnswerToast(false)
+          return
+        }
+        if (collisionHintType === 'direction' && collisionHintStep === 2) {
+          if (selectedCollisionOption !== 'A') {
+            setShowWrongAnswerToast(true)
+            return
+          }
+          setShowCollisionHintModal(false)
+          setHasCollision(false)
+          setSelectedCollisionOption(null)
+          setShowRelativeHintInfo(true)
+          setShowWrongAnswerToast(false)
+          // === 新增 2：方向错误弹窗答对后，让机械臂重新卸�? ===
+          startAssemblyTeachMode() 
+          return
+        }
+        
+        // 以下是默认的“未添加途经点”的判断逻辑
+        if (selectedCollisionOption !== 'B') {
+          setShowWrongAnswerToast(true)
+          return
+        }
+        setShowCollisionHintModal(false)
+        setHasCollision(false)
+        setSelectedCollisionOption(null)
+        setShowRelativeHintInfo(true)
+        setShowWrongAnswerToast(false)
+        // === 新增 3：未加途经点弹窗答对后，让机械臂重新卸�? ===
+        startAssemblyTeachMode() 
+      }}
+
+      onAddWaypoint={handleAddWaypoint}
+      onRemoveWaypoint={handleRemoveWaypoint}
+      onChangeGrabAxis={(axis, value) => handlePointChange(setGrab, axis, value)}
+      onChangeGrabFrame={setGrabFrame}
+      onChangeDropAxis={(axis, value) => handlePointChange(setDrop, axis, value)}
+      onChangeDropFrame={setDropFrame}
+      onChangeWaypointAxis={handleWaypointChange}
+      onChangeWaypointFrame={handleWaypointFrameChange}
+      onChangeJogFrame={setJogFrame}
+      onJogMove={handleJogMove}
+      //onRecordGrab={() => handleRecordPoint(setGrab)}
+      //oncordDrop={() => handleRecordPoint(setDrop)}
+      //0324 �� AssemblyModelPageView �� props ע�봦
+      onRecordGrab={() => handleRecordPoint(setGrab, 'pick')}  // ���� 'pick'
+      onRecordDrop={() => handleRecordPoint(setDrop, 'drop')}  // ���� 'drop'
+      onRecordWaypoint={handleRecordWaypoint}
+      showAddWaypoint={waypoints.length < MAX_WAYPOINTS}
+    />
+  )
+}

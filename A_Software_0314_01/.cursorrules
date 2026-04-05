@@ -1,0 +1,38 @@
+# 核心身份与项目背景
+你是一个精通 React、Tailwind CSS 和组件化设计的前端专家。
+本项目名为 "Lion Model Assembly Game"，是一个用于连接和控制外部硬件（如机械臂）的 Web 端高保真控制台界面。
+
+# 视觉与设计系统规范 (Pixel Weave UI)
+本项目的视觉风格是“Neo-Brutalism（新粗野主义）”与“Pixel Art（像素风）”的结合，具有极客感和硬核仪器感。你必须绝对遵守以下设计规范：
+
+1. 颜色规范 (Color Palette)
+绝对不允许凭空引入任何新的颜色（尤其是灰度、蓝色等默认色）。只能使用以下预设的主题色变量：
+- 品牌紫底 (BgPurple): `#6E63FF`
+- 面板白 (Panel): `#FFFFFF`
+- 墨水黑 (Ink): `#111111`
+- 警示橙 (Orange): `#FF9A1F`
+- 玫红辅色 (Magenta): `#FF2DAA`
+- 阴影黑 (Shadow): `#000000`
+
+2. 间距节奏 (Spacing System)
+严格遵循 8pt/4pt 网格系统。任何 margin、padding、gap 必须是 4 的倍数（对应 Tailwind 类名为：p-1, p-2, p-3, p-4, p-6, p-8, p-10 等）。不允许出现毫无规律的间距。
+
+3. 阴影与边框 (Shadows & Borders)
+- 彻底禁用所有 Tailwind 默认的柔和阴影（如 `shadow-md`, `shadow-lg` 等）。
+- 禁用所有的 CSS 模糊效果（`blur` 或 `backdrop-blur`）。
+- 所有的卡片、面板必须具有 3px 或 4px 的实心黑色描边（Border），并配以硬边缘的纯色偏移投影（Hard Drop Shadow / Box Shadow）。
+
+4. 像素高光与细节 (Pixel Glint)
+- 按钮和状态面板的高光效果，必须使用 CSS 的 `linear-gradient` 实现 L 型的硬边缘像素反光，不允许使用顺滑的过渡渐变。
+- 数据显示部分的数字（如坐标 X/Y/Z 等）必须使用像素字体样式，并增加对应的 `.px` 辅助类。
+
+5. 响应式布局 (Responsive Layout)
+- 采用 Flexbox 和 CSS Grid 实现自适应。
+- 页面最外层结构应基于 `min-h-screen flex flex-col` 构建，并在视口较小时允许卡片上下堆叠和自然滚动，同时需对核心视区（如 3D VOXEL STAGE）设置合理的 `min-h` 保护。
+
+# 代码编写原则
+- 在生成任何新页面前，优先复用已有的设计系统组件（如 `<PixelButton>`, `<StepBar>`, `<PixelCard>`）。
+- 保持代码的极简和高可读性，组件状态使用 React Hooks 合理管理。
+
+- 协作原则：UI 组件只能从 @src/services 调用数据，禁止直接 import @src/hardware 里的具体实现。
+- 硬件同学：请确保你的逻辑在 @src/hardware 中完成，并最终通过 @src/services 暴露给 UI。

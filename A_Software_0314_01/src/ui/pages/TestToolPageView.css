@@ -1,0 +1,161 @@
+.testtool-hardware-badge {
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
+  background: var(--panel);
+  color: var(--ink);
+}
+
+.testtool-hardware-badge-accent {
+  color: var(--magenta);
+}
+
+.testtool-hint-overlay {
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.testtool-hint-modal {
+  background: var(--panel);
+  max-width: 1120px;
+  width: calc(100% - 64px);
+  max-height: 82vh;
+  overflow-y: auto;
+}
+
+.testtool-hint-alert {
+  color: #ff3b3b;
+}
+
+.testtool-hint-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-2px) scale(1.5);
+  transform-origin: center;
+  margin-right: 10px;
+}
+
+.testtool-hint-copy,
+.testtool-hint-question {
+  color: var(--ink);
+}
+
+.testtool-hint-arrow {
+  font-size: 24px;
+  text-shadow: 2px 2px 0 var(--shadow);
+}
+
+.testtool-hint-illustration {
+  width: 440px;
+  height: 320px;
+  background: #fff;
+  display: flex;
+  padding: 12px;
+}
+
+.testtool-hint-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.testtool-hint-caption {
+  color: var(--muted);
+  line-height: 1.2;
+}
+
+.testtool-hint-divider {
+  height: 2px;
+  background:
+    repeating-linear-gradient(90deg, var(--ink) 0 8px, transparent 8px 12px);
+  box-shadow: 0 3px 0 var(--shadow);
+}
+
+.testtool-hint-question-icon {
+  display: inline-block;
+  transform: scale(1.5);
+  transform-origin: center;
+  margin-right: 8px;
+}
+
+.testtool-page-title {
+  color: var(--panel);
+}
+
+.testtool-swatch-purple {
+  background: var(--bgPurple);
+}
+
+.testtool-swatch-orange {
+  background: var(--orange);
+}
+
+.testtool-swatch-magenta {
+  background: var(--magenta);
+}
+
+.testtool-intro {
+  color: var(--magenta);
+}
+
+.testtool-placeholder-card {
+  background: var(--panel);
+  min-height: 180px;
+}
+
+.testtool-placeholder-caption,
+.testtool-model-subtitle {
+  color: var(--muted);
+}
+
+.testtool-running-shell {
+  border-radius: 9999px;
+  border: 2px solid var(--ink);
+  background: var(--panel);
+  overflow: hidden;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.testtool-running-fill {
+  height: 100%;
+  width: 60%;
+  background: #a5ffb5;
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.testtool-running-label {
+  color: var(--ink);
+  position: relative;
+  z-index: 1;
+}
+
+.testtool-model-stage {
+  border: 3px dashed var(--ink);
+  background: var(--panel);
+}
+
+.testtool-hint-trigger {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  width: 60px;
+  height: 60px;
+  border-radius: 9999px;
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--shadow);
+  background: #ffd5d5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.testtool-hint-trigger-icon {
+  font-size: 26px;
+  text-shadow: 2px 2px 0 var(--shadow);
+}
