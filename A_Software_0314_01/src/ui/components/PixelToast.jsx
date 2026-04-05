@@ -10,8 +10,9 @@ export function PixelToast({
 
   return (
     <div
-      className={`fixed left-1/2 -translate-x-1/2 top-4 z-40 px-6 py-3 flex items-center ${className}`}
+      className={`fixed left-1/2 -translate-x-1/2 z-40 px-6 py-3 flex items-center ${className}`}
       style={{
+        top: 'var(--pixel-toast-top, 7rem)',
         border: '2px solid var(--ink)',
         boxShadow: '4px 4px 0 var(--shadow)',
         background: '#FFD5D5',

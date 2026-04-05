@@ -9,10 +9,10 @@ const CONTENT_MAX_WIDTH = 1280
 export function PageLayout({ children, className = '' }) {
   return (
     <div
-      className={`h-screen w-full weave flex flex-col overflow-hidden pt-8 px-8 pb-6 ${className}`}
+      className={`min-h-screen w-full weave flex flex-col pt-8 px-8 pb-6 max-lg:overflow-y-auto lg:h-screen lg:overflow-hidden ${className}`}
     >
       <div
-        className="w-full min-h-0 mx-auto flex flex-col flex-1"
+        className="mx-auto flex w-full flex-col max-lg:min-h-min max-lg:flex-none lg:min-h-0 lg:flex-1"
         style={{ maxWidth: CONTENT_MAX_WIDTH }}
       >
         {children}

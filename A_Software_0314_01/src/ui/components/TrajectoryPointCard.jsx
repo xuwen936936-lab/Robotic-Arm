@@ -50,10 +50,10 @@ export function TrajectoryPointCard({
         <button
           type="button"
           onClick={onRemove}
-          className="trajectory-point-card-remove"
+          className="trajectory-point-card-remove waypoint-pixel-circle-btn waypoint-pixel-circle-btn--remove px"
           aria-label={`Remove ${title}`}
         >
-          -
+          −
         </button>
       )}
 
