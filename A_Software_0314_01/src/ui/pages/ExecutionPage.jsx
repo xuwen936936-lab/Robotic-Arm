@@ -3,7 +3,14 @@ import { PageLayout } from '../components/PageLayout.jsx'
 import { PixelCard } from '../components/PixelCard.jsx'
 import { PixelButton } from '../components/PixelButton.jsx'
 import { StepBar } from '../components/StepBar.jsx'
-import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
+// import { initializeHardwareStore, useHardwareStore } from '../../services/useHardwareStore.ts'
+//0405
+import { 
+  initializeHardwareStore, 
+  useHardwareStore, 
+  subscribeHardwareSignal, 
+  HARDWARE_SIGNALS 
+} from '../../services/useHardwareStore.ts'
 import { mediaAssets } from '../mediaAssets.js'
 import { CelebrationImage } from '../components/CelebrationImage.jsx'
 import { ResetArmButton } from '../components/ResetArmButton.jsx'
@@ -62,10 +69,81 @@ export default function ExecutionPage({ onRestartGame }) {
   }
 
   useEffect(() => clearRunTimers, [])
+  // useEffect(() => {
+  //   const cleanupHardware = initializeHardwareStore()
+  //   return cleanupHardware
+  // }, [])
+
+  //0405
+  const waitingExecutionFinishRef = useRef(false)
+  //0405
   useEffect(() => {
     const cleanupHardware = initializeHardwareStore()
-    return cleanupHardware
+    
+    // === 核心新增：挂载雷达，死等底层的完成信号 ===
+    const unsubscribeSignal = subscribeHardwareSignal((rawSignal) => {
+      if (
+        waitingExecutionFinishRef.current && 
+        rawSignal === HARDWARE_SIGNALS.EXECUTION_RUN_FINISHED
+      ) {
+        waitingExecutionFinishRef.current = false
+        clearRunTimers()
+        setProgress(1) // 进度条瞬间拉满
+        setPhase('success') // 切入成功动画
+        setDangerWarning(false)
+      }
+
+        //0406 === 核心新增：2. 监听到底层触发了急停，立刻打断 UI 的死等状态 ===
+      if (
+        waitingExecutionFinishRef.current && 
+        rawSignal === 'RAW_ESTOP_TRIGGERED'
+      ) {
+        waitingExecutionFinishRef.current = false
+        clearRunTimers() // 关掉那 90 秒的倒计时和进度条动画
+        setProgress(0)  // 进度清零
+        setPhase('idle') // 强制退回初始闲置状态，"Run the Program" 按钮会重新显示
+        setDangerWarning(true) // 顺便让下方的危险提示亮起
+      }
+    })
+    
+    return () => {
+      cleanupHardware()
+      unsubscribeSignal()
+    }
   }, [])
+
+  // const startExecutionRun = () => {
+  //   clearRunTimers()
+  //   setPhase('running')
+  //   setDangerWarning(false)
+  //   setProgress(0)
+
+  //   const startedAt = Date.now()
+  //   progressIntervalRef.current = window.setInterval(() => {
+  //     const elapsed = Date.now() - startedAt
+  //     setProgress(Math.min(0.98, elapsed / EXECUTION_SUCCESS_MS))
+  //   }, 120)
+
+  //   if (!hasTriggeredDangerSignal) {
+  //     dangerTimeoutRef.current = window.setTimeout(() => {
+  //       dangerTimeoutRef.current = null
+  //       clearRunTimers()
+  //       setHasTriggeredDangerSignal(true)
+  //       setPhase('paused-danger')
+  //       setDangerWarning(true)
+  //       setProgress(0)
+  //     }, DANGER_SIGNAL_MS)
+  //     return
+  //   }
+
+  //   completeTimeoutRef.current = window.setTimeout(() => {
+  //     completeTimeoutRef.current = null
+  //     clearRunTimers()
+  //     setProgress(1)
+  //     setPhase('success')
+  //     setDangerWarning(false)
+  //   }, EXECUTION_SUCCESS_MS)
+  // }
 
   const startExecutionRun = () => {
     clearRunTimers()
@@ -73,31 +151,28 @@ export default function ExecutionPage({ onRestartGame }) {
     setDangerWarning(false)
     setProgress(0)
 
+    // 1. 发送 D 指令，机械臂真正跑起来！
+    hardware.startExecutionBatch()
+    waitingExecutionFinishRef.current = true
+
+    // 2. 模拟前端进度条动画 (假进度，一直走到 98% 就停下等信号)
     const startedAt = Date.now()
     progressIntervalRef.current = window.setInterval(() => {
       const elapsed = Date.now() - startedAt
-      setProgress(Math.min(0.98, elapsed / EXECUTION_SUCCESS_MS))
+      // 假设跑完三块积木大约需要 35 秒，让进度条慢慢走
+      setProgress(Math.min(0.98, elapsed / 35000))
     }, 120)
 
-    if (!hasTriggeredDangerSignal) {
-      dangerTimeoutRef.current = window.setTimeout(() => {
-        dangerTimeoutRef.current = null
-        clearRunTimers()
-        setHasTriggeredDangerSignal(true)
-        setPhase('paused-danger')
-        setDangerWarning(true)
-        setProgress(0)
-      }, DANGER_SIGNAL_MS)
-      return
-    }
-
+    // 3. 极限防卡死保底 (删除了原本的 5.2 秒死板结束和 2.3 秒假警告)
     completeTimeoutRef.current = window.setTimeout(() => {
-      completeTimeoutRef.current = null
-      clearRunTimers()
-      setProgress(1)
-      setPhase('success')
-      setDangerWarning(false)
-    }, EXECUTION_SUCCESS_MS)
+      if (waitingExecutionFinishRef.current) {
+         waitingExecutionFinishRef.current = false
+         clearRunTimers()
+         setProgress(1)
+         setPhase('success')
+         setDangerWarning(false)
+      }
+    }, 90000) // 90秒超时兜底
   }
 
   if (phase === 'success') {

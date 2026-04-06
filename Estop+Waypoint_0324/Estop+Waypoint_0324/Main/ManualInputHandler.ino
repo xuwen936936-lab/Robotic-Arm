@@ -150,6 +150,13 @@ void handle_manual_coordinate_input(char *cmd_buf) {
             target_offset_z = calc_z;
         }
 
-        Serial.print(">> [Manual Input] Saved "); Serial.print(point_name);
+        Serial.print(">> [Manual Input] Saved "); Serial.println(point_name);
+    }else {
+        // === 核心修复：恢复静默失败的报错日志 ===
+        Serial.println("--------------------------------------------------");
+        Serial.print(">> [Error] Target unreachable! Kinematics failed. Code: ");
+        Serial.println(result);
+        Serial.println(">> Hint: The coordinate is outside the robot's physical workspace.");
+        Serial.println("--------------------------------------------------");
     }
 }

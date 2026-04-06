@@ -265,6 +265,8 @@ void loop_teach_record() {
                 smart_delay_with_stop(800);
 
                 Serial.println(">>> 🏁 Sequence Complete!");
+                //0405 === 核心新增：向网页端发送装配完全结束的信号 ===
+                Serial.println("SIGNAL:ASSEMBLY_RUN_FINISHED");
                 break;
 
                 stop_v:
@@ -303,12 +305,19 @@ void loop_teach_record() {
                 smart_delay_with_stop(2500);
                 if (is_emergency_triggered) goto stop_o;
 
-                // 4. 到达碰撞点后无限死等，逼迫用户拍下急停按钮
-                Serial.println(">>> ⚠️ Reached Obstacle! System Paused.");
-                Serial.println(">>> Waiting for user to press E-STOP button...");
-                while (!is_emergency_triggered) {
-                    smart_delay_with_stop(50);
-                }
+                // // 4. 到达碰撞点后无限死等，逼迫用户拍下急停按钮
+                // Serial.println(">>> ⚠️ Reached Obstacle! System Paused.");
+                // Serial.println(">>> Waiting for user to press E-STOP button...");
+                // while (!is_emergency_triggered) {
+                //     smart_delay_with_stop(50);
+                // }
+
+                //0405 4. 到达碰撞点后直接发送信号给网页端，然后退出动作序列
+                Serial.println(">>> ⚠️ Reached Obstacle!");
+                // 直接发送预设好的通信协议信号 [cite: 104]
+                Serial.println("SIGNAL:ASSEMBLY_REACHED_SPECIFIED_POINT"); 
+                // 执行完毕，直接跳出该动作流程
+                return;
 
                 stop_o:
                 Serial.println("\n⚠️ [Aborted] Sequence interrupted by E-Stop.");

@@ -1002,14 +1002,16 @@ void do_group_once(int group_num)
 	parse_action(cmd_return);
 }
 
-// void serialEvent() {
-// 	while (Serial.available()) {
-// 		char received_char = (char)Serial.read();
-// 		uart_data_parse(received_char);
-// 	}
-// }
 void serialEvent() {
     while (Serial.available()) {
+        
+        //0406 === 核心修复：如果缓冲区里已经有一条完整指令还没来得及消化，立刻停止读取！ ===
+        // 强行跳出 while 循环，把控制权交还给主 loop() 去执行第一条指令。
+        // 这样紧接着的第二条指令（如 TQ）就会安全地留在底层硬件缓冲区里，等下一回合再读。
+        if (uart_get_ok) {
+            break;
+        }
+
         // 如果当前正在接收长指令 (uart_mode != 0)，无条件放行所有字符给解析器
         if (uart_mode != 0) {
             char received_char = (char)Serial.read();
@@ -1036,7 +1038,7 @@ void serialEvent() {
         else if (c == 'U' || c == 'L' || c == 'K' || c == 'P' || 
                  c == 'F' || c == 'G' || c == 'M' || c == 'N' || 
                  c == 'A' || c == 'B' || c == 'W' || c == 'X' || c == 'V' || 
-                 c == 'Z' || c == 'D' || c == 'C' || c == 'O') {
+                 c == 'Z' || c == 'D' || c == 'C' || c == 'O' || c == 'E' || c == 'R') {
             break; 
         }
         // 4. 如果是其他真正的乱码垃圾字符，直接吃掉丢弃，防止堵塞缓冲区

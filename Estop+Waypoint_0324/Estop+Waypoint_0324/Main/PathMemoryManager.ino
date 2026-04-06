@@ -30,7 +30,7 @@ struct PathSequence {
     bool isValid = false;
 };
 
-PathSequence path_library[12];
+PathSequence path_library[3];
 int library_count = 0;
 
 void loop_path_memory() {
@@ -45,7 +45,7 @@ void loop_path_memory() {
                 Serial.println("\n[Error] No complete path to save!");
                 return;
             }
-            if (library_count >= 12) {
+            if (library_count >= 3) {
                 Serial.println("\n[Limit] Library full!");
                 return;
             }
@@ -101,9 +101,11 @@ void loop_path_memory() {
                 if (is_emergency_triggered) goto stop_batch; // 拦截
             }
 
+            //0405
             Serial.println("\n[DONE] Batch process finished.");
-            return; 
-
+            // === 核心新增：向网页端发送批量执行完全结束的信号 ===
+            Serial.println("SIGNAL:EXECUTION_RUN_FINISHED");
+            return;
 
             // --- 急停强制跳出点 ---
             stop_batch:
@@ -115,10 +117,10 @@ void loop_path_memory() {
         }
 
         // --- 3. 清空库 (C) ---
-        if (key == 'C') {
+        if (key == 'R') {
             Serial.read();
             library_count = 0;
-            for (int i = 0; i < 12; i++) path_library[i].isValid = false;
+            for (int i = 0; i < 3; i++) path_library[i].isValid = false;
             Serial.println("\n[RESET] Library cleared.");
         }
     }

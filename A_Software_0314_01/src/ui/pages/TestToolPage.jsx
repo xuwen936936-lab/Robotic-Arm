@@ -1,3 +1,4 @@
+// //0328
 // import React, { useEffect, useRef, useState } from 'react'
 // import {
 //   HARDWARE_SIGNALS,
@@ -10,36 +11,24 @@
 
 // const RUN_DURATION_MS = 6000
 
-// export default function TestToolPage({ onStartGame }) {
+// export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' }) {
 //   const hardware = useHardwareStore()
 //   const [status, setStatus] = useState('idle')
 //   const [showToast, setShowToast] = useState(false)
 //   const [showHintModal, setShowHintModal] = useState(false)
+//   const [showHintWrongToast, setShowHintWrongToast] = useState(false)
 //   const [selectedOption, setSelectedOption] = useState(null)
 //   const [selectedTool, setSelectedTool] = useState('Flange')
 //   const resultTimerRef = useRef(null)
 //   const waitingHardwareResultRef = useRef(false)
 //   const selectedToolRef = useRef(selectedTool)
 
-//   //0327
-//   useEffect(() => {
-//     // È·ï¿½ï¿½Ó²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½ï¿½ï¿½è±¸Ä£Ê½
-//     if (hardware.connection === 'connected' && hardware.source === 'hardware') {
-//       console.log("[TestPage] Auto-triggering TOGGLE_COORD (K) on mount...");
-      
-//       // ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ store ï¿½ï¿½Ö´ï¿½Ğ·ï¿½ï¿½ï¿½ K Ö¸ï¿½ï¿½Äºï¿½ï¿½ï¿½
-//       import('../../services/useHardwareStore.ts').then(m => {
-//         // È·ï¿½ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ useHardwareStore.ts ï¿½Ğµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
-//         if (m.triggerCoordinateFlow) {
-//           m.triggerCoordinateFlow(); 
-//         }
-//       });
-//     }
-//     // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬ï¿½ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½Ó³É¹ï¿½Ë²ï¿½ä´¥ï¿½ï¿½ 
-//   }, [hardware.connection, hardware.source]);
+//   // ã€å·²åˆ é™¤ã€‘åŸå…ˆåœ¨è¿™é‡Œå‘é€? K æŒ‡ä»¤ (TOGGLE_COORD) çš? useEffect å·²ç»è¢«ç§»é™?
 
 //   const hasError = status === 'error'
 //   const isSuccess = status === 'success'
+//   const payloadValue = selectedTool === 'Tool 1' ? calibratedPayload : '0'
+//   // è¿™é‡Œçš? connectionInfo åŸå°ä¸åŠ¨ï¼Œä¿æŒäº†åŸæœ‰åˆ¤æ–­ real connect çš„é€»è¾‘
 //   const connectionInfo = `${
 //     hardware.connection === 'connected'
 //       ? 'Connected'
@@ -51,6 +40,14 @@
 //   useEffect(() => {
 //     selectedToolRef.current = selectedTool
 //   }, [selectedTool])
+
+//   useEffect(() => {
+//     if (!showHintWrongToast) return undefined
+//     const toastTimerId = window.setTimeout(() => {
+//       setShowHintWrongToast(false)
+//     }, 3000)
+//     return () => window.clearTimeout(toastTimerId)
+//   }, [showHintWrongToast])
 
 //   useEffect(() => {
 //     const cleanupHardware = initializeHardwareStore()
@@ -100,7 +97,7 @@
 //     setShowToast(false)
 //     setShowHintModal(false)
 //     waitingHardwareResultRef.current = false
-//     // æ ¹æ®é€‰ä¸­çš„å·¥å…·å†³å®šèµ°æ­£ç¡®è·¯å¾„è¿˜æ˜¯é”™è¯¯è·¯å¾„
+//     // æ ¹æ®é€‰ä¸­çš„å·¥å…·å†³å®šèµ°æ­£è·¯è¿˜æ˜¯é”™è·¯
 //     const isCorrectTool = selectedToolRef.current === 'Tool 1'
 //     startFixedMoveTest(RUN_DURATION_MS, isCorrectTool)
 
@@ -130,17 +127,28 @@
 //     }, RUN_DURATION_MS)
 //   }
 
+//   // ã€æ–°å¢æ ¸å¿ƒé€»è¾‘ã€‘æ ¹æ®å½“å‰ä¸‹æ‹‰æ¡†é€‰æ‹©çš? Toolï¼Œç›´æ¥ç”Ÿæˆå¼ºè¡Œå†™æ­»çš„åæ ‡ä¼ ç»™è§†å›¾
+//   let displayCoords = { x: '0.00', y: '0.00', z: '430.00', rx: '90.00' }
+//   if (selectedTool === 'Tool 1') {
+//     displayCoords = { x: '0.00', y: '0.00', z: '440.00', rx: '90.00' }
+//   } else if (selectedTool !== 'Flange') { // Gripper, Welder ç­‰å…¶ä»–å·¥å…?
+//     displayCoords = { x: '0.00', y: '0.00', z: '435.00', rx: '90.00' }
+//   }
+
 //   return (
 //     <TestToolPageView
-//       coords={hardware.coords}
+//       // è¿™é‡ŒåŸæœ¬æ˜? coords={hardware.coords}ï¼Œç°åœ¨æ›¿æ¢ä¸ºä¸Šé¢è®¡ç®—å‡ºçš„å‡æ•°æ? displayCoords
+//       coords={displayCoords}
 //       connectionInfo={connectionInfo}
 //       isRunning={hardware.isRunning}
 //       hasError={hasError}
 //       isSuccess={isSuccess}
 //       showToast={showToast}
 //       showHintModal={showHintModal}
+//       showHintWrongToast={showHintWrongToast}
 //       selectedOption={selectedOption}
 //       selectedTool={selectedTool}
+//       payloadValue={payloadValue}
 //       onSelectTool={setSelectedTool}
 //       onSelectOption={setSelectedOption}
 //       onPrimaryAction={
@@ -149,7 +157,10 @@
 //       onOpenHintModal={() => setShowHintModal(true)}
 //       onCloseHintModal={() => setShowHintModal(false)}
 //       onConfirmHintModal={() => {
-//         if (selectedOption !== 'C') return
+//         if (selectedOption !== 'C') {
+//           setShowHintWrongToast(true)
+//           return
+//         }
 //         setShowHintModal(false)
 //         setSelectedOption(null)
 //       }}
@@ -158,7 +169,7 @@
 // }
 
 
-//0328
+//0405
 import React, { useEffect, useRef, useState } from 'react'
 import {
   HARDWARE_SIGNALS,
@@ -169,8 +180,6 @@ import {
 } from '../../services/useHardwareStore.ts'
 import { TestToolPageView } from './TestToolPageView.jsx'
 
-const RUN_DURATION_MS = 6000
-
 export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' }) {
   const hardware = useHardwareStore()
   const [status, setStatus] = useState('idle')
@@ -179,23 +188,24 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
   const [showHintWrongToast, setShowHintWrongToast] = useState(false)
   const [selectedOption, setSelectedOption] = useState(null)
   const [selectedTool, setSelectedTool] = useState('Flange')
+  
+  // === ºËĞÄĞŞ¸Ä 1£ºĞÂÔö±¾µØ×´Ì¬£¬³¹µ×½Ó¹Ü UI µÄ Loading ¶¯»­ ===
+  const [isTesting, setIsTesting] = useState(false) 
+
   const resultTimerRef = useRef(null)
   const waitingHardwareResultRef = useRef(false)
   const selectedToolRef = useRef(selectedTool)
 
-  // ã€å·²åˆ é™¤ã€‘åŸå…ˆåœ¨è¿™é‡Œå‘é€ K æŒ‡ä»¤ (TOGGLE_COORD) çš„ useEffect å·²ç»è¢«ç§»é™¤
-
   const hasError = status === 'error'
   const isSuccess = status === 'success'
   const payloadValue = selectedTool === 'Tool 1' ? calibratedPayload : '0'
-  // è¿™é‡Œçš„ connectionInfo åŸå°ä¸åŠ¨ï¼Œä¿æŒäº†åŸæœ‰åˆ¤æ–­ real connect çš„é€»è¾‘
   const connectionInfo = `${
     hardware.connection === 'connected'
       ? 'Connected'
       : hardware.connection === 'error'
         ? 'Error'
         : 'Disconnected'
-  } Â· ${hardware.source === 'hardware' ? 'Real' : 'Virtual'}`
+  } ¡¤ ${hardware.source === 'hardware' ? 'Real' : 'Virtual'}`
 
   useEffect(() => {
     selectedToolRef.current = selectedTool
@@ -215,7 +225,10 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
       if (!waitingHardwareResultRef.current) return
       if (signal !== HARDWARE_SIGNALS.TEST_TOOL_RUN_FINISHED) return
 
+      // === ºËĞÄĞŞ¸Ä 2£ºÖ»ÒªÒ»ÊÕµ½Ó²¼şĞÅºÅ£¬Á¢¿Ì½áÊø Loading ×´Ì¬ (0 Îó²î) ===
       waitingHardwareResultRef.current = false
+      setIsTesting(false) 
+
       if (resultTimerRef.current !== null) {
         window.clearTimeout(resultTimerRef.current)
         resultTimerRef.current = null
@@ -242,24 +255,25 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
 
   useEffect(() => {
     if (!showToast) return undefined
-
     const toastTimerId = window.setTimeout(() => {
       setShowToast(false)
     }, 3000)
-
     return () => window.clearTimeout(toastTimerId)
   }, [showToast])
 
   const handleTestClick = () => {
-    if (hardware.isRunning) return
+    if (isTesting) return // ·ÀÖ¹ÖØ¸´µã»÷
 
     setStatus('idle')
     setShowToast(false)
     setShowHintModal(false)
+    setIsTesting(true) // ¿ªÆô Loading
     waitingHardwareResultRef.current = false
-    // æ ¹æ®é€‰ä¸­çš„å·¥å…·å†³å®šèµ°æ­£è·¯è¿˜æ˜¯é”™è·¯
+    
     const isCorrectTool = selectedToolRef.current === 'Tool 1'
-    startFixedMoveTest(RUN_DURATION_MS, isCorrectTool)
+    
+    // === ºËĞÄĞŞ¸Ä 3£º¸øµ×²ã store ´«Ò»¸ö 30 ÃëµÄ¼«ÏŞÊ±¼ä£¬·ÀÖ¹ËüÌáÇ°ÇĞ¶Ï×´Ì¬ ===
+    startFixedMoveTest(30000, isCorrectTool) 
 
     if (resultTimerRef.current !== null) {
       window.clearTimeout(resultTimerRef.current)
@@ -269,38 +283,41 @@ export default function TestToolPage({ onStartGame, calibratedPayload = '2kg' })
       hardware.source === 'hardware' && hardware.connection === 'connected'
 
     if (isRealHardwarePath) {
-      // Real hardware path: prefer hardware completion signal.
+      // ÕæÊµÓ²¼şÄ£Ê½£º¿ªÆô¼àÌıÆ÷£¬ËÀµÈµ×²ãµÄ SIGNAL£¬Ö»ÁôÒ»¸ö 30 ÃëµÄ·À¶ÏÁªµ×Ïß
       waitingHardwareResultRef.current = true
+      resultTimerRef.current = window.setTimeout(() => {
+        waitingHardwareResultRef.current = false
+        setIsTesting(false)
+        setStatus('error') // Èç¹û 30 ÃëÁËÓ²¼ş»¹Ã»·¢ĞÅºÅ£¬ËµÃ÷Ó²¼şËÀ»úÁË
+      }, 30000)
+    } else {
+      // ĞéÄâ»·¾³Ä£Ê½£¨Ã»Á¬Ó²¼şÊ±£©£º±£ÁôÔ­À´µÄ 6 Ãë¼Ù¶¯»­
+      resultTimerRef.current = window.setTimeout(() => {
+        waitingHardwareResultRef.current = false
+        setIsTesting(false)
+        if (selectedToolRef.current === 'Tool 1') {
+          setStatus('success')
+        } else {
+          setStatus('error')
+          setShowToast(true)
+        }
+      }, 6000)
     }
-
-    resultTimerRef.current = window.setTimeout(() => {
-      resultTimerRef.current = null
-      // Fallback for mock mode, and also safety fallback if hardware signal is missing.
-      waitingHardwareResultRef.current = false
-      if (selectedToolRef.current === 'Tool 1') {
-        setStatus('success')
-        return
-      }
-
-      setStatus('error')
-      setShowToast(true)
-    }, RUN_DURATION_MS)
   }
 
-  // ã€æ–°å¢æ ¸å¿ƒé€»è¾‘ã€‘æ ¹æ®å½“å‰ä¸‹æ‹‰æ¡†é€‰æ‹©çš„ Toolï¼Œç›´æ¥ç”Ÿæˆå¼ºè¡Œå†™æ­»çš„åæ ‡ä¼ ç»™è§†å›¾
   let displayCoords = { x: '0.00', y: '0.00', z: '430.00', rx: '90.00' }
   if (selectedTool === 'Tool 1') {
     displayCoords = { x: '0.00', y: '0.00', z: '440.00', rx: '90.00' }
-  } else if (selectedTool !== 'Flange') { // Gripper, Welder ç­‰å…¶ä»–å·¥å…·
+  } else if (selectedTool !== 'Flange') {
     displayCoords = { x: '0.00', y: '0.00', z: '435.00', rx: '90.00' }
   }
 
   return (
     <TestToolPageView
-      // è¿™é‡ŒåŸæœ¬æ˜¯ coords={hardware.coords}ï¼Œç°åœ¨æ›¿æ¢ä¸ºä¸Šé¢è®¡ç®—å‡ºçš„å‡æ•°æ® displayCoords
       coords={displayCoords}
       connectionInfo={connectionInfo}
-      isRunning={hardware.isRunning}
+      // === ºËĞÄĞŞ¸Ä 4£º½« UI µÄ isRunning °ó¶¨µ½ÎÒÃÇÍêÈ«ÕÆ¿ØµÄ±¾µØÊÂ¼şÇı¶¯×´Ì¬ ===
+      isRunning={isTesting}
       hasError={hasError}
       isSuccess={isSuccess}
       showToast={showToast}

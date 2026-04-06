@@ -15,14 +15,18 @@ extern void smart_delay_with_stop(unsigned long ms); // 引用急停模块中的
 const int FIXED_INIT_POS[5]  = {1500, 1500, 1500, 1500, 1500}; 
 
 // 2. 设置【起点】舵机角度 (电磁铁去抓取的位置) —— 正确和错误路径共用同一个起点
-const int FIXED_START_POS[5] = {830, 1262, 2081, 1008, 1500}; 
+const int FIXED_START_POS[5] = {767, 1324, 2072, 891, 1499};   //已定位
 
 // 3. 设置【正确终点】舵机角度 (Tool 1 的正确放置位置，按 'F' 触发)
-const int FIXED_END_POS[5]   = {1478, 1262, 2081, 1008, 1500}; 
+const int FIXED_END_POS[5]   = {1523, 1248, 2188, 1089, 1511};  //已定位
+
+//0406 === 核心新增：设置【正确路径过渡点】舵机角度 (抬高机械臂防碰撞) ===
+// ★★★ TODO: 这里的数据是占位符，请你测试后填入实际安全抬高的 PWM 数值 ★★★
+const int FIXED_WAYPOINT_POS[5] = {903, 1493, 2017, 802, 1512};  //已定位
 
 // 4. 设置【错误终点】舵机角度 (其他工具的错误放置位置，按 'G' 触发)
 // ★★★ TODO: 测试完毕后填入实际数值 ★★★
-const int FIXED_WRONG_END_POS[5] = {1478, 1081, 2096, 1165, 1500}; 
+const int FIXED_WRONG_END_POS[5] = {752, 1214, 1984, 875, 1498};  //已定位
 
 // 5. 设置机械臂单次运动的时间 (毫秒)
 const int FIXED_MOVE_TIME = 2000; 
@@ -35,7 +39,12 @@ const int RELAY_PIN = 13;
 // ========================================================
 
 // 内部函数：执行抓放流程，参数 end_pos 决定使用哪组终点数据
-void execute_pick_and_place(const int *end_pos) {
+void execute_pick_and_place(const int *end_pos, const int *waypoint_pos) {
+
+  //0405 === 核心修复：每次执行固定路径前，强制清除可能残留的软件急停拦截状态 ===
+  extern bool is_emergency_triggered;
+  is_emergency_triggered = false;
+
   // 发送全局恢复扭矩指令 (上力)
   char lock_cmd[16];
   snprintf(lock_cmd, sizeof(lock_cmd), "#255PULR!");
@@ -67,6 +76,15 @@ void execute_pick_and_place(const int *end_pos) {
   digitalWrite(RELAY_PIN, HIGH);
   smart_delay_with_stop(500);
 
+  //0406 === 核心新增：如果传入了途径点，则先移动到途径点 ===
+  if (waypoint_pos != nullptr) {
+    Serial.println(">>> 2.5. Moving to WAYPOINT...");
+    for (int i = 0; i < 5; i++) {
+      set_servo(i, waypoint_pos[i], FIXED_MOVE_TIME);
+    }
+    smart_delay_with_stop(FIXED_MOVE_TIME);
+  }
+
   // 步骤 3：移动到【终点】(由参数决定是正确终点还是错误终点)
   Serial.println(">>> 3. Moving to END...");
   for (int i = 0; i < 5; i++) {
@@ -90,6 +108,8 @@ void execute_pick_and_place(const int *end_pos) {
   smart_delay_with_stop(FIXED_MOVE_TIME);
 
   Serial.println(">>> Pick-and-place sequence complete!");
+  //0405 === 核心修改：向网页端发送专属的测试完成信号 ===
+  Serial.println("SIGNAL:TEST_TOOL_RUN_FINISHED");
 }
 
 void loop_fixed_move() {
@@ -114,14 +134,15 @@ void loop_fixed_move() {
     if (key == 'F') {
       Serial.read();
       Serial.println("\n[CMD] Correct path (F) - Tool 1");
-      execute_pick_and_place(FIXED_END_POS);
+      //0406 === 核心修改：传入过渡点数组 FIXED_WAYPOINT_POS ===
+      execute_pick_and_place(FIXED_END_POS, FIXED_WAYPOINT_POS);
     }
 
     // 'G' = 错误路径 (其他工具选中时前端发送)
     if (key == 'G') {
       Serial.read();
       Serial.println("\n[CMD] Wrong path (G) - Wrong tool");
-      execute_pick_and_place(FIXED_WRONG_END_POS);
+      execute_pick_and_place(FIXED_WRONG_END_POS, nullptr);
     }
 
     // 'M' = 电磁铁独立上电 (Magnet ON)

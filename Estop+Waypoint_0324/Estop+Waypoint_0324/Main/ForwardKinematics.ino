@@ -105,7 +105,7 @@ void loop_oneshot_tcp() {
         char key = toupper((char)Serial.peek());
 
         // 1. 监听修饰符 'T' (Target Frame)
-        if (key == 'T') {
+        if (key == '@') {
             Serial.read(); // 消费掉 'T'
             use_target_frame_once = true;
             // 收到 T 后立刻 continue，不退出函数，回头紧接着去读缓冲区里的下一个字符 'P'

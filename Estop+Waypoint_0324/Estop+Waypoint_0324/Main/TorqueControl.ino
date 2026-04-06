@@ -137,5 +137,23 @@ void loop_torque_control() {
             Serial.println("\n[指令] 电磁铁手动断电松开 (N)");
             digitalWrite(RELAY_PIN, LOW);
         }
+        //0405 === 新增：独立的 E 指令，用于急停释放后或任意时刻的机械臂姿态复位 ===
+        else if (key == 'E') {
+            Serial.read(); // 消费掉字符
+            Serial.println("\n[指令] 执行归位程序 (E) - 正在回归竖直构型...");
+            
+            // 声明外部函数
+            extern void set_servo(int servo_index, int pwm_value, int move_time);
+            
+            // 确保先恢复力矩
+            all_uart_send_str("#255PULR!");
+            delay(200);
+            
+            // 0-5 号舵机回到 1500 中位，移动时间 2 秒
+            for (int i = 0; i < 6; i++) {
+                set_servo(i, 1500, 2000);
+            }
+            Serial.println("[System] 复位指令已下发，预计 2 秒后完成。");
+        }
     }
 }

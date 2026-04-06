@@ -49,23 +49,16 @@ void loop_emergency_stop() {
             yield(); 
         }
 
-        // 4. 按钮复位后的处理逻辑（回归竖直构型）
+        //0405 4. 按钮复位后的处理逻辑（保持原姿态并等待人为指令）
         Serial.println("\n[SYSTEM] Emergency Stop Released.");
-        Serial.println("[ACTION] Recovering torque and moving to VERTICAL pose...");
+        Serial.println("[ACTION] Recovering torque to hold current posture. Awaiting 'E' command to reset...");
 
-        // A. 恢复所有舵机的扭矩 (上力)
-        all_uart_send_str("#255PULR!"); 
+        // A. 仅恢复所有舵机的扭矩 (上力)，确保机械臂不会因为重力掉下来，但不改变位置
+        all_uart_send_str("#255PULR!");
         delay(200); 
 
-        // B. 控制 0-5 号核心关节在 2 秒内平滑回到 1500 (竖直中位)
-        for (int i = 0; i < 6; i++) {
-            set_servo(i, 1500, 2000); 
-        }
-
-        // C. 等待复位移动完成
-        delay(2000); 
-        
-        Serial.println("[SYSTEM] Reset complete. System READY.");
+        // 删除了回中位的代码，直接就绪
+        Serial.println("[SYSTEM] System READY. Press 'E' to move to vertical pose.");
     }
 }
 
@@ -100,11 +93,13 @@ void trigger_software_emergency(const char* reason) {
 
 // 0404 修改 smart_delay_with_stop，确保移动过程中也在监测坐标和奇异点
 extern void loop_print_tcp(); // 引用坐标打印/检测函数
+extern void loop_servo(); //0405 <--- 新增：引用外部的舵机运动引擎
 void smart_delay_with_stop(unsigned long ms) {
     unsigned long start_time = millis();
     while (millis() - start_time < ms) {
         loop_emergency_stop(); 
         loop_print_tcp(); // <--- 核心修改：在移动的间隙持续计算当前坐标并检测奇异点 [cite: 51, 62]
+        loop_servo();  //0405 <--- 核心修复 2：在延时的每一毫秒间隙，持续驱动舵机步进！否则机械臂就是瘫痪的。
         
         if (is_emergency_triggered) return; // 无论是物理还是软件触发，立即跳出延时 [cite: 6]
         delay(1); 
